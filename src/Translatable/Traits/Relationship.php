@@ -1,14 +1,12 @@
 <?php
 
-namespace Astrotomic\Translatable\Traits;
+namespace PictaStudio\Translatable\Traits;
 
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
+use PictaStudio\Translatable\Translation;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
  * @property-read string $translationModel
- * @property-read string $translationForeignKey
  */
 trait Relationship
 {
@@ -33,13 +31,7 @@ trait Relationship
      */
     public function getTranslationModelNameDefault(): string
     {
-        $modelName = get_class($this);
-
-        if ($namespace = $this->getTranslationModelNamespace()) {
-            $modelName = $namespace.'\\'.class_basename(get_class($this));
-        }
-
-        return $modelName.config('translatable.translation_suffix', 'Translation');
+        return config('translatable.translation_model', Translation::class);
     }
 
     /**
@@ -55,27 +47,19 @@ trait Relationship
      */
     public function getTranslationRelationKey(): string
     {
-        if ($this->translationForeignKey) {
-            return $this->translationForeignKey;
-        }
-
-        return $this->getForeignKey();
+        return 'translatable_id';
     }
 
-    public function translation(): HasOne
+    public function translation(): MorphMany
     {
         return $this
-            ->hasOne($this->getTranslationModelName(), $this->getTranslationRelationKey())
-            ->ofMany([
-                $this->getTranslationRelationKey() => 'max',
-            ], function (Builder $query): void {
-                $query->where($this->getLocaleKey(), $this->localeOrFallback());
-            });
+            ->translations()
+            ->where($this->getLocaleKey(), $this->localeOrFallback());
     }
 
-    public function translations(): HasMany
+    public function translations(): MorphMany
     {
-        return $this->hasMany($this->getTranslationModelName(), $this->getTranslationRelationKey());
+        return $this->morphMany($this->getTranslationModelName(), 'translatable');
     }
 
     protected function localeOrFallback()

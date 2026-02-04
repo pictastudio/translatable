@@ -1,9 +1,9 @@
 <?php
 
-namespace Astrotomic\Translatable;
+namespace PictaStudio\Translatable;
 
 use ArrayAccess;
-use Astrotomic\Translatable\Exception\LocalesNotDefinedException;
+use PictaStudio\Translatable\Exception\LocalesNotDefinedException;
 use Illuminate\Contracts\Config\Repository as ConfigContract;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Translation\Translator as TranslatorContract;

@@ -1,15 +1,15 @@
 # Introduction
 
-[![Latest Version](http://img.shields.io/packagist/v/astrotomic/laravel-translatable.svg?label=Release&style=for-the-badge)](https://packagist.org/packages/astrotomic/laravel-translatable)
-[![MIT License](https://img.shields.io/github/license/Astrotomic/laravel-translatable.svg?label=License&color=blue&style=for-the-badge)](https://github.com/Astrotomic/laravel-translatable/blob/master/LICENSE)
-[![Offset Earth](https://img.shields.io/badge/Treeware-%F0%9F%8C%B3-green?style=for-the-badge)](https://plant.treeware.earth/Astrotomic/laravel-translatable)
+[![Latest Version](http://img.shields.io/packagist/v/pictastudio/laravel-translatable.svg?label=Release&style=for-the-badge)](https://packagist.org/packages/pictastudio/laravel-translatable)
+[![MIT License](https://img.shields.io/github/license/pictastudio/laravel-translatable.svg?label=License&color=blue&style=for-the-badge)](https://github.com/pictastudio/laravel-translatable/blob/master/LICENSE)
+[![Offset Earth](https://img.shields.io/badge/Treeware-%F0%9F%8C%B3-green?style=for-the-badge)](https://plant.treeware.earth/pictastudio/laravel-translatable)
 [![Larabelles](https://img.shields.io/badge/Larabelles-%F0%9F%A6%84-lightpink?style=for-the-badge)](https://www.larabelles.com/)
 
-[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/Astrotomic/laravel-translatable/phpunit.yml?style=flat-square&logoColor=white&logo=github&label=PHPunit)](https://github.com/Astrotomic/laravel-translatable/actions?query=workflow%3Aphpunit)
-[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/Astrotomic/laravel-translatable/pint.yml?style=flat-square&logoColor=white&logo=github&label=Pint)](https://github.com/Astrotomic/laravel-translatable/actions?query=workflow%3Apint)
-[![Codecov Coverage](https://img.shields.io/codecov/c/github/Astrotomic/laravel-translatable?logo=codecov&logoColor=white&label=Codecov&style=flat-square)](https://codecov.io/gh/Astrotomic/laravel-translatable)
-[![Total Downloads](https://img.shields.io/packagist/dt/astrotomic/laravel-translatable.svg?label=Downloads&style=flat-square)](https://packagist.org/packages/astrotomic/laravel-translatable)
-[![GitBook](https://img.shields.io/badge/GitBook-Astrotomic-7e57c2.svg?style=flat-square)](https://docs.astrotomic.info/laravel-translatable)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/pictastudio/laravel-translatable/phpunit.yml?style=flat-square&logoColor=white&logo=github&label=PHPunit)](https://github.com/pictastudio/laravel-translatable/actions?query=workflow%3Aphpunit)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/pictastudio/laravel-translatable/pint.yml?style=flat-square&logoColor=white&logo=github&label=Pint)](https://github.com/pictastudio/laravel-translatable/actions?query=workflow%3Apint)
+[![Codecov Coverage](https://img.shields.io/codecov/c/github/pictastudio/laravel-translatable?logo=codecov&logoColor=white&label=Codecov&style=flat-square)](https://codecov.io/gh/pictastudio/laravel-translatable)
+[![Total Downloads](https://img.shields.io/packagist/dt/pictastudio/laravel-translatable.svg?label=Downloads&style=flat-square)](https://packagist.org/packages/pictastudio/laravel-translatable)
+[![GitBook](https://img.shields.io/badge/GitBook-pictastudio-7e57c2.svg?style=flat-square)](https://docs.pictastudio.info/laravel-translatable)
 
 <p align="center">
     <img src="/art/socialcard.png" alt="laravel-translatable socialcard">
@@ -19,12 +19,12 @@
 
 This is a Laravel package for translatable models. Its goal is to remove the complexity in retrieving and storing multilingual model instances. With this package you write less code, as the translations are being fetched/saved when you fetch/save your instance.
 
-The full documentation can be found at [GitBook](https://docs.astrotomic.info/laravel-translatable).
+The full documentation can be found at [GitBook](https://docs.pictastudio.info/laravel-translatable).
 
 ## Installation
 
 ```bash
-composer require astrotomic/laravel-translatable
+composer require pictastudio/laravel-translatable
 ```
 
 ## Quick Example
@@ -103,11 +103,11 @@ Please see [CHANGELOG](docs/changelog.md) for more information on what has chang
 
 ## Contributing
 
-Please see [CONTRIBUTING](https://github.com/Astrotomic/.github/blob/master/CONTRIBUTING.md) for details. You could also be interested in [CODE OF CONDUCT](https://github.com/Astrotomic/.github/blob/master/CODE_OF_CONDUCT.md).
+Please see [CONTRIBUTING](https://github.com/pictastudio/.github/blob/master/CONTRIBUTING.md) for details. You could also be interested in [CODE OF CONDUCT](https://github.com/pictastudio/.github/blob/master/CODE_OF_CONDUCT.md).
 
 ### Security
 
-If you discover any security related issues, please check [SECURITY](https://github.com/Astrotomic/.github/blob/master/SECURITY.md) for steps to report it.
+If you discover any security related issues, please check [SECURITY](https://github.com/pictastudio/.github/blob/master/SECURITY.md) for steps to report it.
 
 ## Credits
 
@@ -135,6 +135,6 @@ You're free to use this package, but if it makes it to your production environme
 
 It’s now common knowledge that one of the best tools to tackle the climate crisis and keep our temperatures from rising above 1.5C is to [plant trees](https://www.bbc.co.uk/news/science-environment-48870920). If you contribute to my forest you’ll be creating employment for local families and restoring wildlife habitats.
 
-You can buy trees at [offset.earth/treeware](https://plant.treeware.earth/Astrotomic/laravel-translatable)
+You can buy trees at [offset.earth/treeware](https://plant.treeware.earth/pictastudio/laravel-translatable)
 
 Read more about Treeware at [treeware.earth](https://treeware.earth)

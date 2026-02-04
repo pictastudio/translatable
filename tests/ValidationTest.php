@@ -2,8 +2,8 @@
 
 namespace Tests;
 
-use Astrotomic\Translatable\Locales;
-use Astrotomic\Translatable\Validation\RuleFactory;
+use PictaStudio\Translatable\Locales;
+use PictaStudio\Translatable\Validation\RuleFactory;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\RequiredIf;
 use InvalidArgumentException;

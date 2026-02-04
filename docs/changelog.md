@@ -4,7 +4,7 @@
 
 ### v11.11.0
 
-- Change `\Astrotomic\Translatable\Traits\Relationship::translation()` relation to use the new `ofMany` - [#297](https://github.com/Astrotomic/laravel-translatable/pull/297)
+- Change `\PictaStudio\Translatable\Traits\Relationship::translation()` relation to use the new `ofMany` - [#297](https://github.com/PictaStudio/laravel-translatable/pull/297)
 
 ### v11.10.0
 
@@ -15,103 +15,103 @@
 
 ### v11.9.1
 
-- Fix all methods visibility to allow customization - [\#198](https://github.com/Astrotomic/laravel-translatable/pull/198)
+- Fix all methods visibility to allow customization - [\#198](https://github.com/PictaStudio/laravel-translatable/pull/198)
 
 ### v11.9.0
 
-- Add Laravel 8 support - [\#180](https://github.com/Astrotomic/laravel-translatable/pull/180)
+- Add Laravel 8 support - [\#180](https://github.com/PictaStudio/laravel-translatable/pull/180)
 
 ### v11.8.3
 
-- Fix `\Astrotomic\Translatable\Exception\LocalesNotDefinedException` exception message
+- Fix `\PictaStudio\Translatable\Exception\LocalesNotDefinedException` exception message
 
 ### v11.8.1
 
-- Fix custom locale column name in `\Astrotomic\Translatable\Traits\Relationship::translation()` method - [\#146](https://github.com/Astrotomic/laravel-translatable/pull/146)
+- Fix custom locale column name in `\PictaStudio\Translatable\Traits\Relationship::translation()` method - [\#146](https://github.com/PictaStudio/laravel-translatable/pull/146)
 
 ### v11.8.0
 
-- Add Laravel 7 support - [\#128](https://github.com/Astrotomic/laravel-translatable/pull/128)
+- Add Laravel 7 support - [\#128](https://github.com/PictaStudio/laravel-translatable/pull/128)
 
 ### v11.7.1
 
-- Add `.gitattributes` to exclude files from archive - [\#126](https://github.com/Astrotomic/laravel-translatable/pull/126)
+- Add `.gitattributes` to exclude files from archive - [\#126](https://github.com/PictaStudio/laravel-translatable/pull/126)
 
 ### v11.7.0
 
-- Add `translateOrFail()` method - [\#114](https://github.com/Astrotomic/laravel-translatable/pull/114)
+- Add `translateOrFail()` method - [\#114](https://github.com/PictaStudio/laravel-translatable/pull/114)
 
 ### v11.6.1
 
-- Fix PHP translation cascade deletion - [\#105](https://github.com/Astrotomic/laravel-translatable/pull/105)
+- Fix PHP translation cascade deletion - [\#105](https://github.com/PictaStudio/laravel-translatable/pull/105)
 
 ### v11.6.0
 
 - Drop PHP 7.1 support
 - Drop Laravel 5.6 & 5.7 support
-- Add PHP side translation cascade deletion - [\#98](https://github.com/Astrotomic/laravel-translatable/pull/98) \(_disabled by default_\)
+- Add PHP side translation cascade deletion - [\#98](https://github.com/PictaStudio/laravel-translatable/pull/98) \(_disabled by default_\)
 
 ### v11.5.2
 
-- Fix scope `orderByTranslation()` to return all translations - [\#72](https://github.com/Astrotomic/laravel-translatable/pull/72)
+- Fix scope `orderByTranslation()` to return all translations - [\#72](https://github.com/PictaStudio/laravel-translatable/pull/72)
 
 ### v11.5.1
 
-- Fix `getTranslationByLocaleKey()` to use `translation` relation if possible - [\#49](https://github.com/Astrotomic/laravel-translatable/pull/49)
+- Fix `getTranslationByLocaleKey()` to use `translation` relation if possible - [\#49](https://github.com/PictaStudio/laravel-translatable/pull/49)
 
 ### v11.5.0
 
-- Add rule parsing to `\Astrotomic\Translatable\Validation\RuleFactory` - [\#56](https://github.com/Astrotomic/laravel-translatable/pull/56)
+- Add rule parsing to `\PictaStudio\Translatable\Validation\RuleFactory` - [\#56](https://github.com/PictaStudio/laravel-translatable/pull/56)
 
 ### v11.4.0
 
-- Add Laravel 6 support - [\#52](https://github.com/Astrotomic/laravel-translatable/pull/52)
+- Add Laravel 6 support - [\#52](https://github.com/PictaStudio/laravel-translatable/pull/52)
 
 ### v11.3.0
 
-- Add `\Astrotomic\Translatable\Validation\RuleFactory` - [\#34](https://github.com/Astrotomic/laravel-translatable/pull/34)
+- Add `\PictaStudio\Translatable\Validation\RuleFactory` - [\#34](https://github.com/PictaStudio/laravel-translatable/pull/34)
 
 ### v11.2.1
 
-- Fix duplicate checks of same locale - [\#40](https://github.com/Astrotomic/laravel-translatable/pull/40)
+- Fix duplicate checks of same locale - [\#40](https://github.com/PictaStudio/laravel-translatable/pull/40)
 
 ### v11.2.0
 
-- Add auto fallback locale finder - [\#36](https://github.com/Astrotomic/laravel-translatable/pull/36)
+- Add auto fallback locale finder - [\#36](https://github.com/PictaStudio/laravel-translatable/pull/36)
 
 ### v11.1.3
 
-- Fix conflict between attributes and locales during `fill()` - [\#38](https://github.com/Astrotomic/laravel-translatable/pull/38)
+- Fix conflict between attributes and locales during `fill()` - [\#38](https://github.com/PictaStudio/laravel-translatable/pull/38)
 
 ### v11.1.2
 
-- Refactor `translation` relationship - [\#23](https://github.com/Astrotomic/laravel-translatable/pull/23)
+- Refactor `translation` relationship - [\#23](https://github.com/PictaStudio/laravel-translatable/pull/23)
 
 ### v11.1.1
 
-- Add missing return type-hints - [\#16](https://github.com/Astrotomic/laravel-translatable/pull/16)
+- Add missing return type-hints - [\#16](https://github.com/PictaStudio/laravel-translatable/pull/16)
 
 ### v11.1.0
 
-- Add missing dependencies `illuminate/contracts` and `illuminate/database` - [\#9](https://github.com/Astrotomic/laravel-translatable/pull/9)
-- Add `\Astrotomic\Translatable\Contracts\Translatable` interface
-- Split `\Astrotomic\Translatable\Translatable` into multiple traits - but use them in the main one
-- Add `translation` relationship - [\#3](https://github.com/Astrotomic/laravel-translatable/pull/3)
+- Add missing dependencies `illuminate/contracts` and `illuminate/database` - [\#9](https://github.com/PictaStudio/laravel-translatable/pull/9)
+- Add `\PictaStudio\Translatable\Contracts\Translatable` interface
+- Split `\PictaStudio\Translatable\Translatable` into multiple traits - but use them in the main one
+- Add `translation` relationship - [\#3](https://github.com/PictaStudio/laravel-translatable/pull/3)
 - Flag methods, not defined in interface as `@internal`
 - Rename `getRelationKey()` to `getTranslationRelationKey()` to prevent conflicts - the original one is `@deprecated` and will be dropped in next major release
-- Update the where translation scopes to unify them and remove duplicated code - [\#2](https://github.com/Astrotomic/laravel-translatable/pull/2)
+- Update the where translation scopes to unify them and remove duplicated code - [\#2](https://github.com/PictaStudio/laravel-translatable/pull/2)
 
 ### v11.0.0
 
 - Add PHP7 type-hints [\#557](https://github.com/dimsav/laravel-translatable/pull/557)
-- Move to `Astrotomic` [\#1](https://github.com/Astrotomic/laravel-translatable/pull/1) & [\#4](https://github.com/Astrotomic/laravel-translatable/pull/4)
+- Move to `PictaStudio` [\#1](https://github.com/PictaStudio/laravel-translatable/pull/1) & [\#4](https://github.com/PictaStudio/laravel-translatable/pull/4)
 
-**migrate from dimsav to astrotomic**
+**migrate from dimsav to pictastudio**
 
 1. upgrade to `dimsav/laravel-translatable:v10.0.0`
 2. run `composer remove dimsav/laravel-translatable`
-3. run `composer require astrotomic/laravel-translatable`
-4. replace `Dimsav\` by `Astrotomic\` in your whole project \(namespace change\)
+3. run `composer require pictastudio/laravel-translatable`
+4. replace `Dimsav\` by `PictaStudio\` in your whole project \(namespace change\)
 
 ## v10.0.0
 

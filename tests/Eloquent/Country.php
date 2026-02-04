@@ -2,8 +2,8 @@
 
 namespace Tests\Eloquent;
 
-use Astrotomic\Translatable\Contracts\Translatable as TranslatableContract;
-use Astrotomic\Translatable\Translatable;
+use PictaStudio\Translatable\Contracts\Translatable as TranslatableContract;
+use PictaStudio\Translatable\Translatable;
 use Illuminate\Database\Eloquent\Model as Eloquent;
 
 class Country extends Eloquent implements TranslatableContract
@@ -16,21 +16,6 @@ class Country extends Eloquent implements TranslatableContract
      * @var array
      */
     public $translatedAttributes = ['name'];
-
-    /**
-     * Set $translationModel if you want to overwrite the convention
-     * for the name of the translation Model. Use full namespace if applied.
-     *
-     * The convention is to add "Translation" to the name of the class extending Translatable.
-     * Example: Country => CountryTranslation
-     */
-    public $translationModel;
-
-    /**
-     * This is the foreign key used to define the translation relationship.
-     * Set this if you want to overwrite the laravel default for foreign keys.
-     */
-    public $translationForeignKey;
 
     /**
      * Add your translated attributes here if you want

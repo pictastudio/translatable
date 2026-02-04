@@ -1,5 +1,5 @@
 {
-    "name": "astrotomic/laravel-translatable",
+    "name": "pictastudio/laravel-translatable",
     "description": "A Laravel package for multilingual models",
     "license": "MIT",
     "keywords": [
@@ -8,27 +8,19 @@
         "language",
         "database"
     ],
+    "homepage": "https://github.com/pictastudio/laravel-translatable",
     "authors": [
         {
-            "name": "Tom Witkowski",
-            "email": "gummibeer@astrotomic.info",
-            "homepage": "https://gummibeer.de",
+            "name": "Picta Studio",
+            "email": "info@pictastudio.com",
             "role": "Developer"
         },
         {
-            "name": "Dimitrios Savvopoulos",
-            "email": "ds@dimsav.com",
-            "homepage": "http://dimsav.com",
+            "name": "Frameck",
+            "email": "fra9879@gmail.com",
             "role": "Developer"
         }
     ],
-    "homepage": "https://astrotomic.info",
-    "support": {
-        "email": "dev@astrotomic.info",
-        "issues": "https://github.com/Astrotomic/laravel-translatable/issues",
-        "source": "https://github.com/Astrotomic/laravel-translatable",
-        "docs": "https://docs.astrotomic.info/laravel-translatable"
-    },
     "require": {
         "php": "^8.0",
         "illuminate/contracts": "^9.0 || ^10.0 || ^11.0 || ^12.0",
@@ -47,7 +39,7 @@
     "prefer-stable": true,
     "autoload": {
         "psr-4": {
-            "Astrotomic\\Translatable\\": "src/Translatable/"
+            "PictaStudio\\Translatable\\": "src/Translatable/"
         }
     },
     "autoload-dev": {
@@ -61,7 +53,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Astrotomic\\Translatable\\TranslatableServiceProvider"
+                "PictaStudio\\Translatable\\TranslatableServiceProvider"
             ]
         }
     },

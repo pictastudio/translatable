@@ -2,8 +2,8 @@
 
 namespace Tests\Eloquent;
 
-use Astrotomic\Translatable\Contracts\Translatable as TranslatableContract;
-use Astrotomic\Translatable\Translatable;
+use PictaStudio\Translatable\Contracts\Translatable as TranslatableContract;
+use PictaStudio\Translatable\Translatable;
 use Illuminate\Database\Eloquent\Model as Eloquent;
 
 class CountryStrict extends Eloquent implements TranslatableContract
@@ -16,19 +16,6 @@ class CountryStrict extends Eloquent implements TranslatableContract
      * @var array
      */
     public $translatedAttributes = ['name'];
-
-    /**
-     * Here we set a custom model for translation.
-     * The convention would be Tests\Models\CountryStrictTranslation.
-     *
-     * @var string Class containing the translation
-     */
-    public $translationModel = StrictTranslation::class;
-
-    /**
-     * @var string Foreign key for the translation relationship
-     */
-    public $translationForeignKey = 'country_id';
 
     /**
      * Column containing the locale in the translation table.

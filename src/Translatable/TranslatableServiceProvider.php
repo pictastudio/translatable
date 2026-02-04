@@ -1,9 +1,9 @@
 <?php
 
-namespace Astrotomic\Translatable;
+namespace PictaStudio\Translatable;
 
-use Astrotomic\Translatable\Validation\Rules\TranslatableExists;
-use Astrotomic\Translatable\Validation\Rules\TranslatableUnique;
+use PictaStudio\Translatable\Validation\Rules\TranslatableExists;
+use PictaStudio\Translatable\Validation\Rules\TranslatableUnique;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rule;
 

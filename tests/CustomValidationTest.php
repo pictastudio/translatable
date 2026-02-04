@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests;
 
-use Astrotomic\Translatable\Locales;
-use Astrotomic\Translatable\Validation\Rules\TranslatableExists;
-use Astrotomic\Translatable\Validation\Rules\TranslatableUnique;
+use PictaStudio\Translatable\Locales;
+use PictaStudio\Translatable\Validation\Rules\TranslatableExists;
+use PictaStudio\Translatable\Validation\Rules\TranslatableUnique;
 use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;

@@ -112,6 +112,16 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Translation Model
+    |--------------------------------------------------------------------------
+    |
+    | Defines the model class used by the polymorphic translations table.
+    |
+    */
+    'translation_model' => \PictaStudio\Translatable\Translation::class,
+
+    /*
+    |--------------------------------------------------------------------------
     | Locale key
     |--------------------------------------------------------------------------
     |
@@ -142,7 +152,7 @@ return [
      *
      */
     'rule_factory' => [
-        'format' => \Astrotomic\Translatable\Validation\RuleFactory::FORMAT_ARRAY,
+        'format' => \PictaStudio\Translatable\Validation\RuleFactory::FORMAT_ARRAY,
         'prefix' => '%',
         'suffix' => '%',
     ],

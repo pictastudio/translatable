@@ -7,43 +7,43 @@
 - our main model instance is `$post = Post::first()`
 - translations are available for `en`, `de` and `fr`
 
-## Get an instance of the translation model
+## Get a translation bag
 
 ### translate\(?string $locale = null, bool $withFallback = false\)
 
 **Alias of:** `getTranslation(?string $locale = null, bool $withFallback = null)`
 
-This returns an instance of `PostTranslation` using the default or given locale. It can also use the configured fallback locale if first locale isn't present.
+This returns a `TranslationBag` for the default or given locale. It can also use the configured fallback locale if the first locale isn't present.
 
 ```php
-$post->translate(); // returns the german translation model
-$post->translate('fr'); // returns the french translation model
+$post->translate(); // returns the german translation bag
+$post->translate('fr'); // returns the french translation bag
 $post->translate('it'); // returns null
-$post->translate('it', true); // returns the english translation model
+$post->translate('it', true); // returns the english translation bag
 ```
 
 ### translateOrDefault\(?string $locale = null\)
 
 **Alias of:** `getTranslation(?string $locale = null, bool $withFallback = null)`
 
-This returns an instance of `PostTranslation` using the default or given locale and will always use fallback if needed.
+This returns a `TranslationBag` using the default or given locale and will always use fallback if needed.
 
 ```php
-$post->translateOrDefault(); // returns the german translation model
-$post->translateOrDefault('fr'); // returns the french translation model
-$post->translateOrDefault('it'); // returns the english translation model
+$post->translateOrDefault(); // returns the german translation bag
+$post->translateOrDefault('fr'); // returns the french translation bag
+$post->translateOrDefault('it'); // returns the english translation bag
 ```
 
 ### translateOrNew\(?string $locale = null\)
 
 **Alias of:** `getTranslationOrNew(?string $locale = null)`
 
-This returns an instance of `PostTranslation` using the default or given locale and will create a new instance if needed.
+This returns a `TranslationBag` using the default or given locale and will create a new instance if needed.
 
 ```php
-$post->translateOrNew(); // returns the german translation model
-$post->translateOrNew('fr'); // returns the french translation model
-$post->translateOrNew('it'); // returns the new italian translation model
+$post->translateOrNew(); // returns the german translation bag
+$post->translateOrNew('fr'); // returns the french translation bag
+$post->translateOrNew('it'); // returns the new italian translation bag
 ```
 
 ## hasTranslation\(?string $locale = null\)
@@ -58,7 +58,7 @@ $post->hasTranslation('it'); // false
 
 ## translations\(\)
 
-Is the eloquent relation method for the `HasMany` relation to the translation model.
+Is the eloquent relation method for the `MorphMany` relation to the translations table.
 
 ## deleteTranslations\(string\|array $locales = null\)
 

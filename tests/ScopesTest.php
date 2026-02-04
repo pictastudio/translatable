@@ -132,9 +132,11 @@ final class ScopesTest extends TestCase
             'name' => 'Griechenland',
             'translations' => [[
                 'id' => 1,
-                'country_id' => '1',
-                'name' => 'Griechenland',
+                'translatable_type' => Country::class,
+                'translatable_id' => 1,
                 'locale' => 'de',
+                'attribute' => 'name',
+                'value' => 'Griechenland',
             ]],
         ]], Country::listsTranslations('name')->get()->toArray());
         Country::defaultAutoloadTranslations();
@@ -148,7 +150,8 @@ final class ScopesTest extends TestCase
         $result = Country::withTranslation()->first();
 
         self::assertCount(1, $result->translations);
-        self::assertSame('Greece', $result->translations->first()->name);
+        self::assertSame('name', $result->translations->first()->attribute);
+        self::assertSame('Greece', $result->translations->first()->value);
     }
 
     #[Test]
@@ -161,8 +164,8 @@ final class ScopesTest extends TestCase
 
         $result = Country::withTranslation()->first();
         self::assertEquals(2, $result->translations->count());
-        self::assertEquals('Greece', $result->translations->where('locale', 'en')->first()->name);
-        self::assertEquals('Griechenland', $result->translations->where('locale', 'de')->first()->name);
+        self::assertEquals('Greece', $result->translations->where('locale', 'en')->first()->value);
+        self::assertEquals('Griechenland', $result->translations->where('locale', 'de')->first()->value);
     }
 
     #[Test]
@@ -187,14 +190,9 @@ final class ScopesTest extends TestCase
 
         self::assertEquals(3, $translations->count());
 
-        self::assertEquals('de', $translations[0]->locale);
-        self::assertEquals('Zucchini', $translations[0]->name);
-
-        self::assertEquals('de-CH', $translations[1]->locale);
-        self::assertEquals('Zucchetti', $translations[1]->name);
-
-        self::assertEquals('en', $translations[2]->locale);
-        self::assertEquals('Zucchini', $translations[2]->name);
+        self::assertEquals('Zucchini', $translations->where('locale', 'de')->first()->value);
+        self::assertEquals('Zucchetti', $translations->where('locale', 'de-CH')->first()->value);
+        self::assertEquals('Zucchini', $translations->where('locale', 'en')->first()->value);
     }
 
     #[Test]

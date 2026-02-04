@@ -1,10 +1,10 @@
 <?php
 
-namespace Astrotomic\Translatable\Contracts;
+namespace PictaStudio\Translatable\Contracts;
 
+use PictaStudio\Translatable\TranslationBag;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 interface Translatable
 {
@@ -25,11 +25,11 @@ interface Translatable
 
     public function getDefaultLocale(): ?string;
 
-    public function getNewTranslation(string $locale): Model;
+    public function getNewTranslation(string $locale): TranslationBag;
 
-    public function getTranslation(?string $locale = null, ?bool $withFallback = null): ?Model;
+    public function getTranslation(?string $locale = null, ?bool $withFallback = null): ?TranslationBag;
 
-    public function getTranslationOrNew(?string $locale = null): Model;
+    public function getTranslationOrNew(?string $locale = null): TranslationBag;
 
     /**
      * @return array<string,array<string,mixed>>
@@ -47,19 +47,17 @@ interface Translatable
 
     public function setDefaultLocale(?string $locale);
 
-    public function translate(?string $locale = null, bool $withFallback = false): ?Model;
+    public function translate(?string $locale = null, bool $withFallback = false): ?TranslationBag;
 
-    public function translateOrDefault(?string $locale = null): ?Model;
+    public function translateOrDefault(?string $locale = null): ?TranslationBag;
 
-    public function translateOrNew(?string $locale = null): Model;
+    public function translateOrNew(?string $locale = null): TranslationBag;
 
-    /**
-     * @return HasOne<Model>
-     */
-    public function translation(): HasOne;
+    public function getTranslationValue(string $locale, string $attribute);
 
-    /**
-     * @return HasMany<Model>
-     */
-    public function translations(): HasMany;
+    public function setTranslationValue(string $locale, string $attribute, $value): void;
+
+    public function translation(): MorphMany;
+
+    public function translations(): MorphMany;
 }

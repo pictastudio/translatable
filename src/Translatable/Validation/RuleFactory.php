@@ -1,8 +1,8 @@
 <?php
 
-namespace Astrotomic\Translatable\Validation;
+namespace PictaStudio\Translatable\Validation;
 
-use Astrotomic\Translatable\Locales;
+use PictaStudio\Translatable\Locales;
 use Illuminate\Contracts\Config\Repository;
 use InvalidArgumentException;
 

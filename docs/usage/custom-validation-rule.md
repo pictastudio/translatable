@@ -9,7 +9,7 @@ Ensure that the attribute value is unique by checking its absence in the databas
 ##### Option 1
 
 ```php
-use Astrotomic\Translatable\Validation\Rules\TranslatableUnique;
+use PictaStudio\Translatable\Validation\Rules\TranslatableUnique;
 ...
 
 $person = new Person(['name' => 'john doe']);
@@ -28,7 +28,7 @@ $validator = Validator::make($data, [
 ##### Option 2
 
 ```php
-use Astrotomic\Translatable\Validation\Rules\TranslatableUnique;
+use PictaStudio\Translatable\Validation\Rules\TranslatableUnique;
 ...
 
 $person = new Person(['name' => 'john doe']);
@@ -72,7 +72,7 @@ Verify if the attribute value exists by confirming its presence in the database;
 ##### Option 1
 
 ```php
-use Astrotomic\Translatable\Validation\Rules\TranslatableExists;
+use PictaStudio\Translatable\Validation\Rules\TranslatableExists;
 ...
 
 $person = new Person(['name' => 'john doe']);

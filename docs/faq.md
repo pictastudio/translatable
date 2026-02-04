@@ -2,11 +2,11 @@
 
 ## **Do you have any example code?**
 
-Examples for all the package features can be found [in the code](https://github.com/Astrotomic/laravel-translatable/tree/main/tests/Eloquent) used for the [tests](https://github.com/Astrotomic/laravel-translatable/tree/main/tests).
+Examples for all the package features can be found [in the code](https://github.com/PictaStudio/laravel-translatable/tree/main/tests/Eloquent) used for the [tests](https://github.com/PictaStudio/laravel-translatable/tree/main/tests).
 
 ## **Can I ask you some questions?**
 
-Got any question or suggestion? Feel free to open an [Issue](https://github.com/Astrotomic/laravel-translatable/issues/new).
+Got any question or suggestion? Feel free to open an [Issue](https://github.com/PictaStudio/laravel-translatable/issues/new).
 
 ## **Is there anything I can help you with?**
 
@@ -23,8 +23,8 @@ Please see the installation steps to understand how your database should be stru
 If your properties are written in english, we recommend using these commands in your migrations:
 
 ```php
-// We insert the old attributes into the fresh translation table:
-\DB::statement("insert into country_translations (country_id, name, locale) select id, name, 'en' from countries");
+// We insert the old attributes into the translations table:
+\DB::statement("insert into translations (translatable_type, translatable_id, locale, attribute, value) select 'App\\Country', id, 'en', 'name', name from countries");
 
 // We drop the translation attributes in our main table:
 Schema::table('posts', function ($table) {
@@ -35,21 +35,22 @@ Schema::table('posts', function ($table) {
 
 ## **How do I sort by translations?**
 
-We provide a [scope](https://github.com/Astrotomic/laravel-translatable/blob/826fb909eb81f80cccc947a7b66cb9ef35a6e5ef/src/Translatable/Translatable.php#L448-L464) to order the main model entries by its translation values.
+We provide a [scope](https://github.com/PictaStudio/laravel-translatable/blob/826fb909eb81f80cccc947a7b66cb9ef35a6e5ef/src/Translatable/Translatable.php#L448-L464) to order the main model entries by its translation values.
 
 ## How can I select a model by translated field?
 
-For example, let's image we want to find the `Post` having a `PostTranslation` title equal to `My first post`.
+For example, let's image we want to find the `Post` having a translated title equal to `My first post`.
 
 ```php
 Post::whereHas('translations', function ($query) {
     $query
         ->where('locale', 'en')
-        ->where('title', 'My first post');
+        ->where('attribute', 'title')
+        ->where('value', 'My first post');
 })->first();
 ```
 
-You can find more info at the Laravel [Querying Relations docs](http://laravel.com/docs/5.1/eloquent-relationships#querying-relations). But we also provide [several scopes](https://github.com/Astrotomic/laravel-translatable/blob/826fb909eb81f80cccc947a7b66cb9ef35a6e5ef/src/Translatable/Translatable.php#L408-L446) to cover the most common scenarios.
+You can find more info at the Laravel [Querying Relations docs](http://laravel.com/docs/5.1/eloquent-relationships#querying-relations). But we also provide [several scopes](https://github.com/PictaStudio/laravel-translatable/blob/826fb909eb81f80cccc947a7b66cb9ef35a6e5ef/src/Translatable/Translatable.php#L408-L446) to cover the most common scenarios.
 
 ## **Why do I get a mysql error while running the migrations?**
 
@@ -58,8 +59,8 @@ If you see the following mysql error:
 ```text
 [Illuminate\Database\QueryException]
 SQLSTATE[HY000]: General error: 1005 Can't create table 'my_database.#sql-455_63'
-  (errno: 150) (SQL: alter table `country_translations`
-  add constraint country_translations_country_id_foreign foreign key (`country_id`)
+  (errno: 150) (SQL: alter table `translations`
+  add constraint translations_translatable_id_foreign foreign key (`translatable_id`)
   references `countries` (`id`) on delete cascade)
 ```
 
@@ -84,7 +85,7 @@ public function down()
 For new tables, a quick solution is to set the storage engine in the migration:
 
 ```php
-Schema::create('language_translations', function(Blueprint $table){
+Schema::create('translations', function(Blueprint $table){
   $table->engine = 'InnoDB';
   $table->increments('id');
     // ...

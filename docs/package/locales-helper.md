@@ -1,6 +1,6 @@
 # Locales helper
 
-In addition to the trait we also provide a helper class `\Astrotomic\Translatable\Locales` it's a singleton service available as `translatable.locales` and `\Astrotomic\Translatable\Locales` .  
+In addition to the trait we also provide a helper class `\PictaStudio\Translatable\Locales` it's a singleton service available as `translatable.locales` and `\PictaStudio\Translatable\Locales` .  
 This helper manages all locales available for translation and provides several methods.
 
 This class also implements the `ArrayAccess` interface to allow you to use it like a normal array.

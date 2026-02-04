@@ -8,8 +8,8 @@ Because the trait introduces a new relation your base model needs a primary key 
 
 ```php
 use Illuminate\Database\Eloquent\Relations\Pivot;
-use Astrotomic\Translatable\Contracts\Translatable as TranslatableContract;
-use Astrotomic\Translatable\Translatable;
+use PictaStudio\Translatable\Contracts\Translatable as TranslatableContract;
+use PictaStudio\Translatable\Translatable;
 
 class RoleUser extends Pivot implements TranslatableContract
 {

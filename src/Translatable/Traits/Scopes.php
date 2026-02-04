@@ -1,6 +1,6 @@
 <?php
 
-namespace Astrotomic\Translatable\Traits;
+namespace PictaStudio\Translatable\Traits;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -14,24 +14,41 @@ trait Scopes
         $withFallback = $this->useFallback();
         $translationTable = $this->getTranslationsTable();
         $localeKey = $this->getLocaleKey();
+        $attributeKey = 'attribute';
+        $valueKey = 'value';
+        $table = $this->getTable();
+        $keyName = $this->getKeyName();
+        $morphClass = $this->getMorphClass();
 
         $query
-            ->select($this->getTable().'.'.$this->getKeyName(), $translationTable.'.'.$translationField)
-            ->leftJoin($translationTable, $translationTable.'.'.$this->getTranslationRelationKey(), '=', $this->getTable().'.'.$this->getKeyName())
+            ->select($table.'.'.$keyName, $translationTable.'.'.$valueKey.' as '.$translationField)
+            ->leftJoin($translationTable, function (JoinClause $join) use ($translationTable, $table, $keyName, $morphClass, $attributeKey, $translationField) {
+                $join
+                    ->on($translationTable.'.translatable_id', '=', $table.'.'.$keyName)
+                    ->where($translationTable.'.translatable_type', '=', $morphClass)
+                    ->where($translationTable.'.'.$attributeKey, '=', $translationField);
+            })
             ->where($translationTable.'.'.$localeKey, $this->locale());
 
         if ($withFallback) {
-            $query->orWhere(function (Builder $q) use ($translationTable, $localeKey) {
+            $query->orWhere(function (Builder $q) use ($translationTable, $localeKey, $attributeKey, $translationField, $morphClass) {
                 $q
                     ->where($translationTable.'.'.$localeKey, $this->getFallbackLocale())
-                    ->whereNotIn($translationTable.'.'.$this->getTranslationRelationKey(), function (QueryBuilder $q) use (
+                    ->where($translationTable.'.'.$attributeKey, $translationField)
+                    ->where($translationTable.'.translatable_type', $morphClass)
+                    ->whereNotIn($translationTable.'.translatable_id', function (QueryBuilder $q) use (
                         $translationTable,
-                        $localeKey
+                        $localeKey,
+                        $attributeKey,
+                        $translationField,
+                        $morphClass
                     ) {
                         $q
-                            ->select($translationTable.'.'.$this->getTranslationRelationKey())
+                            ->select($translationTable.'.translatable_id')
                             ->from($translationTable)
-                            ->where($translationTable.'.'.$localeKey, $this->locale());
+                            ->where($translationTable.'.'.$localeKey, $this->locale())
+                            ->where($translationTable.'.'.$attributeKey, $translationField)
+                            ->where($translationTable.'.translatable_type', $morphClass);
                     });
             });
         }
@@ -54,16 +71,21 @@ trait Scopes
         $localeKey = $this->getLocaleKey();
         $table = $this->getTable();
         $keyName = $this->getKeyName();
+        $attributeKey = 'attribute';
+        $valueKey = 'value';
+        $morphClass = $this->getMorphClass();
 
         return $query
             ->with('translations')
             ->select("{$table}.*")
-            ->leftJoin($translationTable, function (JoinClause $join) use ($translationTable, $localeKey, $table, $keyName) {
+            ->leftJoin($translationTable, function (JoinClause $join) use ($translationTable, $localeKey, $table, $keyName, $attributeKey, $translationField, $morphClass) {
                 $join
-                    ->on("{$translationTable}.{$this->getTranslationRelationKey()}", '=', "{$table}.{$keyName}")
+                    ->on("{$translationTable}.translatable_id", '=', "{$table}.{$keyName}")
+                    ->where("{$translationTable}.translatable_type", $morphClass)
+                    ->where("{$translationTable}.{$attributeKey}", $translationField)
                     ->where("{$translationTable}.{$localeKey}", $this->locale());
             })
-            ->orderBy("{$translationTable}.{$translationField}", $sortMethod);
+            ->orderBy("{$translationTable}.{$valueKey}", $sortMethod);
     }
 
     public function scopeOrWhereTranslation(Builder $query, string $translationField, $value, ?string $locale = null)
@@ -93,7 +115,9 @@ trait Scopes
     public function scopeWhereTranslation(Builder $query, string $translationField, $value, ?string $locale = null, string $method = 'whereHas', string $operator = '=')
     {
         return $query->$method('translations', function (Builder $query) use ($translationField, $value, $locale, $operator) {
-            $query->where($this->getTranslationsTable().'.'.$translationField, $operator, $value);
+            $query
+                ->where($this->getTranslationsTable().'.attribute', $translationField)
+                ->where($this->getTranslationsTable().'.value', $operator, $value);
 
             if ($locale) {
                 $query->where($this->getTranslationsTable().'.'.$this->getLocaleKey(), $operator, $locale);

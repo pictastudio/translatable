@@ -2,8 +2,8 @@
 
 namespace Tests;
 
-use Astrotomic\Translatable\Exception\LocalesNotDefinedException;
-use Astrotomic\Translatable\Locales;
+use PictaStudio\Translatable\Exception\LocalesNotDefinedException;
+use PictaStudio\Translatable\Locales;
 use PHPUnit\Framework\Attributes\Test;
 
 final class LocalesTest extends TestCase

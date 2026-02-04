@@ -35,7 +35,7 @@ To adjust the default `format` , `prefix` or `suffix` used by the factory you ca
 
 ```php
 'rule_factory' => [
-    'format' => \Astrotomic\Translatable\Validation\RuleFactory::FORMAT_ARRAY,
+    'format' => \PictaStudio\Translatable\Validation\RuleFactory::FORMAT_ARRAY,
     'prefix' => '%',
     'suffix' => '%',
 ]
