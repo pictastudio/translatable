@@ -7,15 +7,61 @@ use Illuminate\Contracts\Translation\Translator;
 
 class Locales
 {
+    /**
+     * @var array<string, string>
+     */
+    protected array $locales = [];
+
     public function __construct(
         protected ConfigRepository $config,
         protected Translator $translator,
-    ) {}
+    ) {
+        $this->load();
+    }
 
     /**
      * @return array<int, string>
      */
     public function all(): array
+    {
+        return array_values($this->locales);
+    }
+
+    public function add(string $locale): void
+    {
+        if ($locale === '') {
+            return;
+        }
+
+        $this->locales[$locale] = $locale;
+    }
+
+    public function forget(string $locale): void
+    {
+        unset($this->locales[$locale]);
+    }
+
+    public function get(string $locale): ?string
+    {
+        return $this->locales[$locale] ?? null;
+    }
+
+    public function getCountryLocale(string $locale, string $country): string
+    {
+        return $locale . $this->separator() . $country;
+    }
+
+    public function getLanguageFromCountryBasedLocale(string $locale): string
+    {
+        return explode($this->separator(), $locale, 2)[0];
+    }
+
+    public function isLocaleCountryBased(string $locale): bool
+    {
+        return str_contains($locale, $this->separator());
+    }
+
+    public function load(): void
     {
         $configuredLocales = (array) $this->config->get('translatable.locales', []);
         $separator = $this->separator();
@@ -40,10 +86,17 @@ class Locales
         }
 
         if ($locales === []) {
-            return [$this->current()];
+            $locale = $this->current();
+            $this->locales = [$locale => $locale];
+
+            return;
         }
 
-        return array_values(array_unique($locales));
+        $this->locales = [];
+
+        foreach (array_values(array_unique($locales)) as $locale) {
+            $this->locales[$locale] = $locale;
+        }
     }
 
     public function current(): string
@@ -74,13 +127,13 @@ class Locales
             return false;
         }
 
-        return in_array($locale, $this->all(), true);
+        return isset($this->locales[$locale]);
     }
 
     public function fallback(?string $locale = null): ?string
     {
-        if (is_string($locale) && str_contains($locale, $this->separator())) {
-            $language = explode($this->separator(), $locale, 2)[0];
+        if (is_string($locale) && $this->isLocaleCountryBased($locale)) {
+            $language = $this->getLanguageFromCountryBasedLocale($locale);
 
             if ($this->has($language)) {
                 return $language;
