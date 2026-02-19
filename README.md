@@ -1,57 +1,97 @@
-# This is my package translatable
+# Laravel Translatable
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/pictastudio/translatable.svg?style=flat-square)](https://packagist.org/packages/pictastudio/translatable)
-[![Tests](https://img.shields.io/github/actions/workflow/status/pictastudio/translatable/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/pictastudio/translatable/actions/workflows/run-tests.yml)
-[![Total Downloads](https://img.shields.io/packagist/dt/pictastudio/translatable.svg?style=flat-square)](https://packagist.org/packages/pictastudio/translatable)
-
-This is where your description should go. Try and limit it to a paragraph or two. Consider adding a small example.
-
-## Support us
-
-[<img src="https://github-ads.s3.eu-central-1.amazonaws.com/translatable.jpg?t=1" width="419px" />](https://spatie.be/github-ad-click/translatable)
-
-We invest a lot of resources into creating [best in class open source packages](https://spatie.be/open-source). You can support us by [buying one of our paid products](https://spatie.be/open-source/support-us).
-
-We highly appreciate you sending us a postcard from your hometown, mentioning which of our package(s) you are using. You'll find our address on [our contact page](https://spatie.be/about-us). We publish all received postcards on [our virtual postcard wall](https://spatie.be/open-source/postcards).
+Single-table polymorphic translations for Laravel Eloquent models.
 
 ## Installation
-
-You can install the package via composer:
 
 ```bash
 composer require pictastudio/translatable
 ```
 
-## Usage
-
-```php
-$skeleton = new PictaStudio\Translatable();
-echo $skeleton->echoPhrase('Hello, PictaStudio!');
-```
-
-## Testing
+Publish the config and migrations:
 
 ```bash
-composer test
+php artisan vendor:publish --tag=translatable-config
+php artisan vendor:publish --tag=translatable-migrations
+php artisan migrate
 ```
 
-## Changelog
+## Core Concept
 
-Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
+All translations are stored in one table (`translations`) with a polymorphic relation:
 
-## Contributing
+- `translatable_type`
+- `translatable_id`
+- `locale`
+- `attribute`
+- `value`
 
-Please see [CONTRIBUTING](https://github.com/spatie/.github/blob/main/CONTRIBUTING.md) for details.
+This allows translating any model using the same structure.
 
-## Security Vulnerabilities
+## Usage
 
-Please review [our security policy](../../security/policy) on how to report security vulnerabilities.
+Add the trait and declare translated attributes:
 
-## Credits
+```php
+use Illuminate\Database\Eloquent\Model;
+use PictaStudio\Translatable\Translatable;
 
-- [Frameck](https://github.com/Frameck)
-- [All Contributors](../../contributors)
+class Post extends Model
+{
+    use Translatable;
 
-## License
+    public array $translatedAttributes = ['title', 'summary'];
 
-The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
+    protected $fillable = ['slug', 'title', 'summary'];
+}
+```
+
+Store translations:
+
+```php
+$post = Post::create([
+    'slug' => 'welcome',
+    'title:en' => 'Welcome',
+    'title:it' => 'Benvenuto',
+]);
+```
+
+Read translations:
+
+```php
+app()->setLocale('it');
+
+$post->title;          // Benvenuto (current locale)
+$post->{'title:en'};   // Welcome
+```
+
+Locale keyed mass assignment is also supported:
+
+```php
+Post::create([
+    'slug' => 'roadmap',
+    'en' => ['title' => 'Roadmap'],
+    'it' => ['title' => 'Tabella di marcia'],
+]);
+```
+
+## Locale Header Middleware
+
+The package includes `PictaStudio\Translatable\Middleware\SetLocaleFromHeader`.
+
+When enabled, it reads a request header (default: `Locale`) and sets `app()->setLocale(...)` only if the value is valid according to configured locales.
+
+Config keys:
+
+- `register_locale_middleware` (default: `true`)
+- `locale_header` (default: `Locale`)
+- `locales` (valid locale list)
+
+## Configuration
+
+See `/config/translatable.php` for:
+
+- locales and locale separator
+- fallback behavior
+- translation model and locale key
+- middleware registration toggle and header name

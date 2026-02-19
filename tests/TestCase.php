@@ -2,8 +2,8 @@
 
 namespace PictaStudio\Translatable\Tests;
 
-use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\{Route, Schema};
 use Orchestra\Testbench\TestCase as Orchestra;
 use PictaStudio\Translatable\TranslatableServiceProvider;
 
@@ -14,28 +14,42 @@ class TestCase extends Orchestra
         parent::setUp();
 
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
-
-        Factory::guessFactoryNamesUsing(
-            fn (string $modelName) => 'PictaStudio\\Translatable\\Database\\Factories\\' . class_basename($modelName) . 'Factory'
-        );
+        $this->artisan('migrate', ['--database' => 'testing'])->run();
+        $this->createModelTables();
+        $this->registerTestRoutes();
     }
 
     public function getEnvironmentSetUp($app)
     {
         config()->set('database.default', 'testing');
-
-        // $migration = include __DIR__.'/../database/migrations/create_translatable_table.php.stub';
-        // $migration->up();
-
-        // $migrations = collect(scandir(__DIR__ . '/../database/migrations'))
-        //     ->reject(fn (string $file) => in_array($file, ['.', '..']))
-        //     ->map(fn (string $file) => str($file)->beforeLast('.php'))
-        //     ->toArray();
-
-        // Artisan::call('migrate', ['--path' => 'database/migrations']);
+        config()->set('translatable.locales', ['en', 'it', 'fr']);
+        config()->set('translatable.locale', null);
+        config()->set('translatable.fallback_locale', 'en');
+        config()->set('translatable.register_locale_middleware', true);
+        config()->set('translatable.locale_header', 'Locale');
     }
 
-    protected function getPackageProviders($app)
+    protected function createModelTables(): void
+    {
+        Schema::create('posts', function (Blueprint $table): void {
+            $table->id();
+            $table->string('slug');
+            $table->timestamps();
+        });
+
+        Schema::create('products', function (Blueprint $table): void {
+            $table->id();
+            $table->unsignedInteger('stock')->default(0);
+            $table->timestamps();
+        });
+    }
+
+    protected function registerTestRoutes(): void
+    {
+        Route::get('/locale-check', static fn () => app()->getLocale());
+    }
+
+    protected function getPackageProviders($app): array
     {
         return [
             TranslatableServiceProvider::class,

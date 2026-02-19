@@ -1,6 +1,6 @@
 {
     "name": "pictastudio/translatable",
-    "description": "make your models translatable",
+    "description": "Polymorphic translations for Laravel models",
     "keywords": [
         "Picta Studio",
         "laravel",
@@ -21,7 +21,18 @@
         }
     ],
     "require": {
-        "php": "^8.4"
+        "php": "^8.4",
+        "illuminate/contracts": "^12.0",
+        "illuminate/database": "^12.0",
+        "illuminate/http": "^12.0",
+        "illuminate/support": "^12.0"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "PictaStudio\\Translatable\\TranslatableServiceProvider"
+            ]
+        }
     },
     "require-dev": {
         "orchestra/testbench": "^10.4",
