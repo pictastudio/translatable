@@ -2,18 +2,32 @@
 
 namespace PictaStudio\Translatable;
 
+use Illuminate\Contracts\Http\Kernel as HttpKernel;
+use Illuminate\Foundation\Http\Kernel;
 use PictaStudio\Translatable\Validation\Rules\TranslatableExists;
 use PictaStudio\Translatable\Validation\Rules\TranslatableUnique;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rule;
+use PictaStudio\Translatable\Middleware\SetLocaleFromHeader;
 
 class TranslatableServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
+        if ($this->app->bound(HttpKernel::class)) {
+            /** @var Kernel $httpKernel */
+            $httpKernel = $this->app->make(HttpKernel::class);
+            $httpKernel->prependMiddleware(SetLocaleFromHeader::class);
+        }
+
         $this->publishes([
             __DIR__.'/../config/translatable.php' => config_path('translatable.php'),
         ], 'translatable');
+
+        $this->loadMigrationsFrom(__DIR__.'/../../database/migrations');
+        $this->publishesMigrations([
+            __DIR__.'/../../database/migrations' => database_path('migrations'),
+        ], 'translatable-migrations');
 
         $this->loadTranslationsFrom(__DIR__.'/../lang', 'translatable');
         $this->publishes([

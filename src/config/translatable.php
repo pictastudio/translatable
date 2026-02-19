@@ -12,7 +12,7 @@ return [
     */
     'locales' => [
         'en',
-        'fr',
+        'it',
         'es' => [
             'MX', // mexican spanish
             'CO', // colombian spanish
@@ -44,6 +44,17 @@ return [
     |
     */
     'locale' => null,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Use locale from header
+    |--------------------------------------------------------------------------
+    |
+    | If enabled, the provided middleware will read the "Lang" header from
+    | the request and set the application's locale accordingly.
+    |
+    */
+    'use_locale_header' => true,
 
     /*
     |--------------------------------------------------------------------------
