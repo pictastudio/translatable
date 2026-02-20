@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\DB;
 use PictaStudio\Translatable\Tests\Models\{Post, Product};
 
 use function Pest\Laravel\assertDatabaseHas;
@@ -79,4 +81,56 @@ it('provides translate or new helpers', function (): void {
     $post->refresh();
 
     expect($post->translate('it')?->title)->toBe('Domande frequenti');
+});
+
+it('fills translation timestamps on create', function (): void {
+    $post = Post::query()->create([
+        'slug' => 'timed',
+        'title:en' => 'Timestamped',
+    ]);
+
+    $translation = DB::table('translations')
+        ->where('translatable_type', Post::class)
+        ->where('translatable_id', $post->id)
+        ->where('locale', 'en')
+        ->where('attribute', 'title')
+        ->first();
+
+    expect($translation)->not->toBeNull();
+    expect($translation?->created_at)->not->toBeNull();
+    expect($translation?->updated_at)->not->toBeNull();
+});
+
+it('fills translation timestamps on update', function (): void {
+    $createdAt = Date::parse('2026-02-20 10:00:00');
+    $updatedAt = Date::parse('2026-02-20 11:00:00');
+
+    try {
+        Date::setTestNow($createdAt);
+
+        $post = Post::query()->create([
+            'slug' => 'timed-update',
+            'title:en' => 'Timestamped',
+        ]);
+
+        Date::setTestNow($updatedAt);
+
+        $post->update([
+            'title:en' => 'Updated',
+        ]);
+        $post->refresh();
+    } finally {
+        Date::setTestNow();
+    }
+
+    $translation = DB::table('translations')
+        ->where('translatable_type', Post::class)
+        ->where('translatable_id', $post->getKey())
+        ->where('locale', 'en')
+        ->where('attribute', 'title')
+        ->first();
+
+    expect($translation)->not->toBeNull();
+    expect(Date::parse($translation?->created_at)->format('Y-m-d H:i:s'))->toBe('2026-02-20 10:00:00');
+    expect(Date::parse($translation?->updated_at)->format('Y-m-d H:i:s'))->toBe('2026-02-20 11:00:00');
 });

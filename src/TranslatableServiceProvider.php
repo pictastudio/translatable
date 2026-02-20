@@ -5,6 +5,7 @@ namespace PictaStudio\Translatable;
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Support\ServiceProvider;
 use PictaStudio\Translatable\Middleware\SetLocaleFromHeader;
+use PictaStudio\Translatable\Console\Commands\InstallCommand;
 
 class TranslatableServiceProvider extends ServiceProvider
 {
@@ -18,19 +19,21 @@ class TranslatableServiceProvider extends ServiceProvider
         $this->app->singleton(Locales::class);
         $this->app->alias(Locales::class, 'translatable.locales');
         $this->app->alias(Locales::class, 'translatable');
+
+        $this->commands([
+            InstallCommand::class,
+        ]);
     }
 
     public function boot(): void
     {
-        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
-
         if ($this->app->runningInConsole()) {
             $this->publishes([
                 __DIR__ . '/../config/translatable.php' => config_path('translatable.php'),
             ], 'translatable-config');
 
             $this->publishesMigrations([
-                __DIR__ . '/../database/migrations' => database_path('migrations'),
+                __DIR__ . '/../database/migrations/create_translations_table.php' => database_path('migrations/' . date('Y_m_d_His_') . 'create_translations_table.php'),
             ], 'translatable-migrations');
         }
 

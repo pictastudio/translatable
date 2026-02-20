@@ -14,6 +14,8 @@ return new class extends Migration
             $table->string('locale')->index();
             $table->string('attribute');
             $table->text('value')->nullable();
+            $table->dateTime('created_at');
+            $table->dateTime('updated_at');
 
             $table->unique(
                 ['translatable_type', 'translatable_id', 'locale', 'attribute'],

@@ -456,6 +456,25 @@ trait Translatable
                 $translation->setConnection($connectionName);
             }
 
+            $timestamp = $translation->freshTimestamp();
+            $createdAtColumn = $translation->getCreatedAtColumn();
+            $updatedAtColumn = $translation->getUpdatedAtColumn();
+
+            if (
+                !$translation->exists
+                && is_string($createdAtColumn)
+                && $createdAtColumn !== ''
+                && $translation->getAttribute($createdAtColumn) === null
+            ) {
+                $translation->setAttribute($createdAtColumn, $timestamp);
+            }
+
+            if (is_string($updatedAtColumn) && $updatedAtColumn !== '') {
+                if ($translation->exists || $translation->getAttribute($updatedAtColumn) === null) {
+                    $translation->setAttribute($updatedAtColumn, $timestamp);
+                }
+            }
+
             $translation->setAttribute('translatable_type', $this->getMorphClass());
             $translation->setAttribute('translatable_id', $this->getKey());
             $saved = $translation->save();
