@@ -39,6 +39,7 @@ class TestCase extends Orchestra
 
         Schema::create('products', function (Blueprint $table): void {
             $table->id();
+            $table->string('name');
             $table->unsignedInteger('stock')->default(0);
             $table->timestamps();
         });

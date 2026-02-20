@@ -15,6 +15,11 @@ use Illuminate\Support\Str;
  */
 trait Translatable
 {
+    /**
+     * @var array<string, bool>
+     */
+    protected static array $translatedAttributeColumnCache = [];
+
     protected ?string $defaultLocale = null;
 
     public function __isset($key): bool
@@ -338,6 +343,8 @@ trait Translatable
         }
 
         $entry->setAttribute('value', $value);
+
+        $this->syncTranslatedAttributeToBaseColumn($attribute, $locale, $value);
     }
 
     public function replicateWithTranslations(?array $except = null): Model
@@ -455,5 +462,60 @@ trait Translatable
         }
 
         return $saved;
+    }
+
+    protected function syncTranslatedAttributeToBaseColumn(string $attribute, string $locale, mixed $value): void
+    {
+        if (!$this->shouldSyncTranslatedAttributeToBaseColumn($attribute)) {
+            return;
+        }
+
+        if (!$this->shouldOverrideBaseColumnValue($attribute, $locale)) {
+            return;
+        }
+
+        parent::setAttribute($attribute, $value);
+    }
+
+    protected function shouldSyncTranslatedAttributeToBaseColumn(string $attribute): bool
+    {
+        if (!(bool) config('translatable.sync_base_attributes', true)) {
+            return false;
+        }
+
+        return $this->hasModelColumnForAttribute($attribute);
+    }
+
+    protected function shouldOverrideBaseColumnValue(string $attribute, string $locale): bool
+    {
+        if ($locale === $this->locale()) {
+            return true;
+        }
+
+        if (!array_key_exists($attribute, $this->attributes)) {
+            return true;
+        }
+
+        $currentValue = $this->attributes[$attribute];
+
+        return $currentValue === null || $currentValue === '';
+    }
+
+    protected function hasModelColumnForAttribute(string $attribute): bool
+    {
+        $connectionName = $this->getConnectionName() ?? 'default';
+        $cacheKey = $connectionName . '|' . $this->getTable() . '|' . $attribute;
+
+        if (array_key_exists($cacheKey, self::$translatedAttributeColumnCache)) {
+            return self::$translatedAttributeColumnCache[$cacheKey];
+        }
+
+        $hasColumn = $this->getConnection()
+            ->getSchemaBuilder()
+            ->hasColumn($this->getTable(), $attribute);
+
+        self::$translatedAttributeColumnCache[$cacheKey] = $hasColumn;
+
+        return $hasColumn;
     }
 }

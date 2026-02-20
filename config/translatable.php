@@ -57,6 +57,7 @@ return [
     'translation_model' => \PictaStudio\Translatable\Translation::class,
     'locale_key' => 'locale',
     'translations_wrapper' => null,
+    'sync_base_attributes' => true,
     'to_array_always_loads_translations' => true,
     'delete_translations_on_delete' => true,
 

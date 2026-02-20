@@ -8,6 +8,8 @@ Single-table polymorphic translations for Laravel Eloquent models.
 composer require pictastudio/translatable
 ```
 
+Laravel auto-discovers the package service provider, so no manual provider registration is required.
+
 Publish the config and migrations:
 
 ```bash
@@ -94,4 +96,8 @@ See `/config/translatable.php` for:
 - locales and locale separator
 - fallback behavior
 - translation model and locale key
+- base-column syncing for translated attributes (`sync_base_attributes`)
 - middleware registration toggle and header name
+
+With `sync_base_attributes=true` (default), translated values are also synced to matching model columns when they exist.
+This allows keeping non-null translated columns in your tables (for example `name`) without requiring nullable schema changes.

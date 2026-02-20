@@ -32,6 +32,11 @@ it('stores translations for different models in the same polymorphic table', fun
         'attribute' => 'name',
         'value' => 'Scarpe',
     ]);
+
+    assertDatabaseHas('products', [
+        'id' => $product->id,
+        'name' => 'Shoes',
+    ]);
 });
 
 it('reads and writes translated attributes using locale aware accessors', function (): void {

@@ -7,6 +7,10 @@
         "translatable"
     ],
     "homepage": "https://github.com/pictastudio/translatable",
+    "support": {
+        "issues": "https://github.com/pictastudio/translatable/issues",
+        "source": "https://github.com/pictastudio/translatable"
+    },
     "license": "MIT",
     "authors": [
         {
@@ -27,33 +31,36 @@
         "illuminate/http": "^12.0",
         "illuminate/support": "^12.0"
     },
-    "extra": {
-        "laravel": {
-            "providers": [
-                "PictaStudio\\Translatable\\TranslatableServiceProvider"
-            ]
-        }
-    },
     "require-dev": {
+        "laravel/pint": "^1.0",
         "orchestra/testbench": "^10.4",
         "pestphp/pest": "^4.0",
-        "pestphp/pest-plugin-laravel": "^4.0",
-        "laravel/pint": "^1.0"
+        "pestphp/pest-plugin-laravel": "^4.0"
     },
     "autoload": {
         "psr-4": {
-            "PictaStudio\\Translatable\\": "src"
+            "PictaStudio\\Translatable\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "PictaStudio\\Translatable\\Tests\\": "tests"
+            "PictaStudio\\Translatable\\Tests\\": "tests/"
         }
     },
     "scripts": {
         "test": "vendor/bin/pest",
         "test-coverage": "vendor/bin/pest --coverage",
         "format": "vendor/bin/pint"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "PictaStudio\\Translatable\\TranslatableServiceProvider"
+            ],
+            "aliases": {
+                "Translatable": "PictaStudio\\Translatable\\Facades\\Translatable"
+            }
+        }
     },
     "config": {
         "sort-packages": true,
