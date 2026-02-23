@@ -11,6 +11,7 @@ return [
     |
     */
     'locales' => [
+        'it',
         'en',
     ],
 
@@ -39,7 +40,7 @@ return [
     | If null, no fixed fallback locale is used.
     |
     */
-    'fallback_locale' => null,
+    'fallback_locale' => 'it',
 
     /*
     |--------------------------------------------------------------------------
