@@ -2,6 +2,10 @@
 
 All notable changes to `translatable` will be documented in this file.
 
+## v0.1.2 - 2026-02-26
+
+**Full Changelog**: https://github.com/pictastudio/translatable/compare/v0.1.1...v0.1.2
+
 ## v0.1.1 - 2026-02-26
 
 ### What's Changed
