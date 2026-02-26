@@ -4,8 +4,8 @@ namespace PictaStudio\Translatable;
 
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Support\ServiceProvider;
-use PictaStudio\Translatable\Middleware\SetLocaleFromHeader;
 use PictaStudio\Translatable\Console\Commands\InstallCommand;
+use PictaStudio\Translatable\Middleware\SetLocaleFromHeader;
 
 class TranslatableServiceProvider extends ServiceProvider
 {

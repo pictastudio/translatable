@@ -1,7 +1,6 @@
 <?php
 
-use Illuminate\Support\Facades\Date;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\{DB, Date};
 use PictaStudio\Translatable\Tests\Models\{Post, Product};
 
 use function Pest\Laravel\assertDatabaseHas;
