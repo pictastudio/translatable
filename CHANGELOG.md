@@ -2,6 +2,16 @@
 
 All notable changes to `translatable` will be documented in this file.
 
+## v0.1.3 - 2026-03-05
+
+### What's Changed
+
+#### Features
+
+- **Fallback on original field value** - now if no value is found for translations in the requested or fallback language it falls back to the original field value instead of returning null
+
+**Full Changelog**: https://github.com/pictastudio/translatable/compare/v0.1.2...v0.1.3
+
 ## v0.1.2 - 2026-02-26
 
 **Full Changelog**: https://github.com/pictastudio/translatable/compare/v0.1.1...v0.1.2
