@@ -58,6 +58,23 @@ it('reads and writes translated attributes using locale aware accessors', functi
     expect($post->{'title:it'})->toBe('Salve');
 });
 
+it('falls back to base table values when translations are missing', function (): void {
+    $now = now();
+
+    DB::table('products')->insert([
+        'name' => 'Legacy name',
+        'stock' => 20,
+        'created_at' => $now,
+        'updated_at' => $now,
+    ]);
+
+    app()->setLocale('fr');
+
+    $product = Product::query()->firstOrFail();
+
+    expect($product->name)->toBe('Legacy name');
+});
+
 it('supports locale keyed mass assignment and fallback', function (): void {
     $post = Post::query()->create([
         'slug' => 'roadmap',

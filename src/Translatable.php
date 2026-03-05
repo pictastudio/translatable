@@ -404,10 +404,16 @@ trait Translatable
 
         $fallbackLocale = $this->getFallbackLocale($locale);
         if ($fallbackLocale) {
-            return $this->getTranslationValue($fallbackLocale, $attribute);
+            $fallbackValue = $this->getTranslationValue($fallbackLocale, $attribute);
+
+            if ($fallbackValue !== null && $fallbackValue !== '') {
+                return $fallbackValue;
+            }
+
+            $value = $fallbackValue;
         }
 
-        return $value;
+        return $this->getBaseAttributeOrFallback($attribute, $value);
     }
 
     /**
@@ -536,5 +542,14 @@ trait Translatable
         self::$translatedAttributeColumnCache[$cacheKey] = $hasColumn;
 
         return $hasColumn;
+    }
+
+    protected function getBaseAttributeOrFallback(string $attribute, mixed $fallback): mixed
+    {
+        if (!$this->hasModelColumnForAttribute($attribute)) {
+            return $fallback;
+        }
+
+        return parent::getAttribute($attribute);
     }
 }
