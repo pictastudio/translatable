@@ -73,4 +73,26 @@ return [
     */
     'register_locale_middleware' => true,
     'locale_header' => 'Locale',
+
+    /*
+    |--------------------------------------------------------------------------
+    | AI Translation
+    |--------------------------------------------------------------------------
+    |
+    | These options power model translation through the Laravel AI SDK.
+    | Routes are disabled by default so applications can opt in and attach
+    | their own authentication / authorization middleware.
+    |
+    */
+    'ai' => [
+        'source_locale' => null,
+        'provider' => null,
+        'model' => null,
+        'routes' => [
+            'enabled' => false,
+            'prefix' => 'translatable/ai',
+            'name' => 'translatable.ai.',
+            'middleware' => ['api'],
+        ],
+    ],
 ];

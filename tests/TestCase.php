@@ -4,6 +4,7 @@ namespace PictaStudio\Translatable\Tests;
 
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\{Route, Schema};
+use Laravel\Ai\AiServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 use PictaStudio\Translatable\TranslatableServiceProvider;
 
@@ -22,11 +23,18 @@ class TestCase extends Orchestra
     public function getEnvironmentSetUp($app)
     {
         config()->set('database.default', 'testing');
+        config()->set('ai.default', 'openai');
+        config()->set('ai.providers.openai', [
+            'driver' => 'openai',
+            'key' => 'test-key',
+        ]);
         config()->set('translatable.locales', ['en', 'it', 'fr']);
         config()->set('translatable.locale', null);
         config()->set('translatable.fallback_locale', 'en');
         config()->set('translatable.register_locale_middleware', true);
         config()->set('translatable.locale_header', 'Locale');
+        config()->set('translatable.ai.routes.enabled', true);
+        config()->set('translatable.ai.routes.middleware', []);
     }
 
     protected function createModelTables(): void
@@ -53,6 +61,7 @@ class TestCase extends Orchestra
     protected function getPackageProviders($app): array
     {
         return [
+            AiServiceProvider::class,
             TranslatableServiceProvider::class,
         ];
     }

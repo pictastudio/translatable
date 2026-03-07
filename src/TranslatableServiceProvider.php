@@ -3,8 +3,9 @@
 namespace PictaStudio\Translatable;
 
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
-use PictaStudio\Translatable\Console\Commands\InstallCommand;
+use PictaStudio\Translatable\Console\Commands\{InstallCommand, TranslateModelsCommand};
 use PictaStudio\Translatable\Middleware\SetLocaleFromHeader;
 
 class TranslatableServiceProvider extends ServiceProvider
@@ -22,6 +23,7 @@ class TranslatableServiceProvider extends ServiceProvider
 
         $this->commands([
             InstallCommand::class,
+            TranslateModelsCommand::class,
         ]);
     }
 
@@ -38,10 +40,18 @@ class TranslatableServiceProvider extends ServiceProvider
         }
 
         if (!$this->shouldRegisterLocaleMiddleware()) {
+            if ($this->shouldRegisterAiRoutes()) {
+                $this->registerAiRoutes();
+            }
+
             return;
         }
 
         $this->registerLocaleMiddleware();
+
+        if ($this->shouldRegisterAiRoutes()) {
+            $this->registerAiRoutes();
+        }
     }
 
     protected function shouldRegisterLocaleMiddleware(): bool
@@ -66,5 +76,22 @@ class TranslatableServiceProvider extends ServiceProvider
         }
 
         $kernel->prependMiddleware(SetLocaleFromHeader::class);
+    }
+
+    protected function shouldRegisterAiRoutes(): bool
+    {
+        return (bool) config('translatable.ai.routes.enabled', false);
+    }
+
+    protected function registerAiRoutes(): void
+    {
+        if ($this->app->routesAreCached()) {
+            return;
+        }
+
+        Route::middleware((array) config('translatable.ai.routes.middleware', ['api']))
+            ->prefix((string) config('translatable.ai.routes.prefix', 'translatable/ai'))
+            ->name((string) config('translatable.ai.routes.name', 'translatable.ai.'))
+            ->group(__DIR__ . '/../routes/translatable.php');
     }
 }
