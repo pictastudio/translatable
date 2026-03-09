@@ -9,6 +9,7 @@ use PictaStudio\Translatable\Ai\Agents\TranslateModelAgent;
 use PictaStudio\Translatable\Contracts\Translatable as TranslatableContract;
 use PictaStudio\Translatable\Locales;
 use RuntimeException;
+use Traversable;
 
 class ModelTranslator
 {
@@ -39,40 +40,124 @@ class ModelTranslator
      */
     public function translate(Model&TranslatableContract $model, array $options = []): array
     {
-        $sourceLocale = $this->resolveSourceLocale(Arr::get($options, 'source_locale'));
-        $targetLocales = $this->resolveTargetLocales(Arr::get($options, 'target_locales'), $sourceLocale);
-        $attributes = $this->resolveAttributes($model, Arr::get($options, 'attributes'));
-        $sourceValues = $this->resolveSourceValues($model, $sourceLocale, $attributes);
-        [$pairs, $skipped] = $this->resolvePairs(
-            $model,
-            $attributes,
-            $sourceValues,
-            $targetLocales,
-            (bool) Arr::get($options, 'force', false)
-        );
+        $results = $this->translateMany([$model], $options);
 
-        if ($pairs === []) {
-            return $this->summary($model, $sourceLocale, $targetLocales, $attributes, [], $skipped, 0);
+        return $results[0];
+    }
+
+    /**
+     * @param  iterable<Model&TranslatableContract>  $models
+     * @param  array{
+     *      source_locale?: string|null,
+     *      target_locales?: array<int, string>|null,
+     *      attributes?: array<int, string>|null,
+     *      force?: bool,
+     *      provider?: string|array<int, string>|null,
+     *      model?: string|null
+     *  }  $options
+     * @return array<int, array{
+     *      model_type: class-string<Model>,
+     *      model_id: mixed,
+     *      source_locale: string,
+     *      target_locales: array<int, string>,
+     *      translated_attributes: array<int, string>,
+     *      requested_count: int,
+     *      translated_count: int,
+     *      translated: array<string, array<string, string>>,
+     *      skipped: array<int, array{locale: string, attribute: string, reason: string}>
+     * }>
+     */
+    public function translateMany(iterable $models, array $options = []): array
+    {
+        $models = $this->normalizeModels($models);
+
+        if ($models === []) {
+            return [];
         }
 
-        $translations = $this->requestTranslations(
-            $model,
-            $sourceLocale,
-            $sourceValues,
-            $pairs,
-            Arr::get($options, 'provider', config('translatable.ai.provider')),
-            $this->normalizeNullableString(Arr::get($options, 'model', config('translatable.ai.model')))
-        );
+        $this->ensureModelsCanBeBatched($models);
 
-        foreach ($translations as $locale => $localeTranslations) {
-            foreach ($localeTranslations as $attribute => $value) {
-                $model->setTranslationValue($locale, $attribute, $value);
+        $sourceLocale = $this->resolveSourceLocale(Arr::get($options, 'source_locale'));
+        $targetLocales = $this->resolveTargetLocales(Arr::get($options, 'target_locales'), $sourceLocale);
+        $attributes = $this->resolveAttributes($models[0], Arr::get($options, 'attributes'));
+        $provider = Arr::get($options, 'provider', config('translatable.ai.provider'));
+        $aiModel = $this->normalizeNullableString(Arr::get($options, 'model', config('translatable.ai.model')));
+        $force = (bool) Arr::get($options, 'force', false);
+
+        $preparedModels = [];
+
+        foreach ($models as $model) {
+            $sourceValues = $this->resolveSourceValues($model, $sourceLocale, $attributes);
+            [$pairs, $skipped] = $this->resolvePairs(
+                $model,
+                $attributes,
+                $sourceValues,
+                $targetLocales,
+                $force
+            );
+
+            $preparedModels[] = [
+                'model' => $model,
+                'model_id' => (string) $model->getKey(),
+                'source_values' => $sourceValues,
+                'pairs' => $pairs,
+                'skipped' => $skipped,
+            ];
+        }
+
+        $translationsByModelId = [];
+        $translatableBatch = array_values(array_filter(
+            $preparedModels,
+            static fn (array $item): bool => $item['pairs'] !== []
+        ));
+
+        $batchSize = max(1, (int) config('translatable.ai.batch_size', 25));
+
+        foreach (array_chunk($translatableBatch, $batchSize) as $batch) {
+            $batchTranslations = $this->requestTranslationsForBatch(
+                $models[0]::class,
+                $sourceLocale,
+                $targetLocales,
+                $attributes,
+                $batch,
+                $provider,
+                $aiModel,
+            );
+
+            foreach ($batchTranslations as $modelId => $translations) {
+                $translationsByModelId[$modelId] = $translations;
             }
         }
 
-        $model->save();
+        $results = [];
 
-        return $this->summary($model, $sourceLocale, $targetLocales, $attributes, $translations, $skipped, count($pairs));
+        foreach ($preparedModels as $item) {
+            /** @var Model&TranslatableContract $model */
+            $model = $item['model'];
+            $translations = $translationsByModelId[$item['model_id']] ?? [];
+
+            foreach ($translations as $locale => $localeTranslations) {
+                foreach ($localeTranslations as $attribute => $value) {
+                    $model->setTranslationValue($locale, $attribute, $value);
+                }
+            }
+
+            if ($translations !== []) {
+                $model->save();
+            }
+
+            $results[] = $this->summary(
+                $model,
+                $sourceLocale,
+                $targetLocales,
+                $attributes,
+                $translations,
+                $item['skipped'],
+                count($item['pairs']),
+            );
+        }
+
+        return $results;
     }
 
     protected function resolveSourceLocale(?string $sourceLocale): string
@@ -209,28 +294,46 @@ class ModelTranslator
     }
 
     /**
-     * @param  array<string, string>  $sourceValues
-     * @param  array<int, array{locale: string, attribute: string}>  $pairs
+     * @param  class-string<Model>  $modelClass
+     * @param  array<int, string>  $targetLocales
+     * @param  array<int, string>  $attributes
+     * @param  array<int, array{
+     *      model: Model&TranslatableContract,
+     *      model_id: string,
+     *      source_values: array<string, string>,
+     *      pairs: array<int, array{locale: string, attribute: string}>,
+     *      skipped: array<int, array{locale: string, attribute: string, reason: string}>
+     *  }>  $batch
      * @param  string|array<int, string>|null  $provider
-     * @return array<string, array<string, string>>
+     * @return array<string, array<string, array<string, string>>>
      */
-    protected function requestTranslations(
-        Model&TranslatableContract $model,
+    protected function requestTranslationsForBatch(
+        string $modelClass,
         string $sourceLocale,
-        array $sourceValues,
-        array $pairs,
+        array $targetLocales,
+        array $attributes,
+        array $batch,
         string|array|null $provider,
         ?string $aiModel,
     ): array {
+        $translationCount = array_sum(array_map(
+            static fn (array $item): int => count($item['pairs']),
+            $batch
+        ));
+
         $agent = TranslateModelAgent::make(
             sourceLocale: $sourceLocale,
-            targetLocales: array_values(array_unique(array_column($pairs, 'locale'))),
-            attributes: array_values(array_unique(array_column($pairs, 'attribute'))),
-            translationCount: count($pairs),
+            modelIds: array_values(array_map(
+                static fn (array $item): string => $item['model_id'],
+                $batch
+            )),
+            targetLocales: $targetLocales,
+            attributes: $attributes,
+            translationCount: $translationCount,
         );
 
         $response = $agent->prompt(
-            $this->buildPrompt($model, $sourceLocale, $sourceValues, $pairs),
+            $this->buildBatchPrompt($modelClass, $sourceLocale, $batch),
             provider: $provider,
             model: $aiModel,
         );
@@ -242,27 +345,32 @@ class ModelTranslator
             throw new RuntimeException('The AI translation response did not include a valid translations payload.');
         }
 
-        return $this->normalizeTranslations($translations, $pairs);
+        return $this->normalizeTranslations($translations, $batch);
     }
 
     /**
-     * @param  array<string, string>  $sourceValues
-     * @param  array<int, array{locale: string, attribute: string}>  $pairs
+     * @param  class-string<Model>  $modelClass
+     * @param  array<int, array{
+     *      model: Model&TranslatableContract,
+     *      model_id: string,
+     *      source_values: array<string, string>,
+     *      pairs: array<int, array{locale: string, attribute: string}>,
+     *      skipped: array<int, array{locale: string, attribute: string, reason: string}>
+     *  }>  $batch
      */
-    protected function buildPrompt(
-        Model&TranslatableContract $model,
-        string $sourceLocale,
-        array $sourceValues,
-        array $pairs,
-    ): string {
+    protected function buildBatchPrompt(string $modelClass, string $sourceLocale, array $batch): string
+    {
         $payload = [
-            'model' => [
-                'type' => $model::class,
-                'id' => (string) $model->getKey(),
-            ],
+            'model_type' => $modelClass,
             'source_locale' => $sourceLocale,
-            'source_values' => $sourceValues,
-            'translations_to_generate' => $pairs,
+            'models' => array_map(
+                static fn (array $item): array => [
+                    'model_id' => $item['model_id'],
+                    'source_values' => $item['source_values'],
+                    'translations_to_generate' => $item['pairs'],
+                ],
+                $batch
+            ),
         ];
 
         return implode("\n\n", [
@@ -270,7 +378,7 @@ class ModelTranslator
             'Requirements:',
             '- Preserve placeholders, HTML, Markdown, URLs, email addresses, punctuation, and line breaks.',
             '- Keep the same meaning, register, and amount of detail.',
-            '- Return exactly one translation for each locale and attribute pair listed in translations_to_generate.',
+            '- Return exactly one translation for each model_id, locale, and attribute combination listed in the payload.',
             '- Do not add explanations or code fences.',
             json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '{}',
         ]);
@@ -278,15 +386,23 @@ class ModelTranslator
 
     /**
      * @param  array<int, mixed>  $translations
-     * @param  array<int, array{locale: string, attribute: string}>  $pairs
-     * @return array<string, array<string, string>>
+     * @param  array<int, array{
+     *      model: Model&TranslatableContract,
+     *      model_id: string,
+     *      source_values: array<string, string>,
+     *      pairs: array<int, array{locale: string, attribute: string}>,
+     *      skipped: array<int, array{locale: string, attribute: string, reason: string}>
+     *  }>  $batch
+     * @return array<string, array<string, array<string, string>>>
      */
-    protected function normalizeTranslations(array $translations, array $pairs): array
+    protected function normalizeTranslations(array $translations, array $batch): array
     {
         $requestedPairs = [];
 
-        foreach ($pairs as $pair) {
-            $requestedPairs[$pair['locale'] . ':' . $pair['attribute']] = true;
+        foreach ($batch as $item) {
+            foreach ($item['pairs'] as $pair) {
+                $requestedPairs[$item['model_id'] . '|' . $pair['locale'] . '|' . $pair['attribute']] = true;
+            }
         }
 
         $normalized = [];
@@ -296,30 +412,33 @@ class ModelTranslator
                 continue;
             }
 
+            $modelId = $this->normalizeNullableString(Arr::get($translation, 'model_id'));
             $locale = $this->normalizeNullableString(Arr::get($translation, 'locale'));
             $attribute = $this->normalizeNullableString(Arr::get($translation, 'attribute'));
             $value = $this->normalizeNullableString(Arr::get($translation, 'value'));
 
-            if ($locale === null || $attribute === null || $value === null) {
+            if ($modelId === null || $locale === null || $attribute === null || $value === null) {
                 continue;
             }
 
-            $pairKey = $locale . ':' . $attribute;
+            $pairKey = $modelId . '|' . $locale . '|' . $attribute;
 
             if (!isset($requestedPairs[$pairKey])) {
                 continue;
             }
 
-            $normalized[$locale][$attribute] = $value;
+            $normalized[$modelId][$locale][$attribute] = $value;
         }
 
-        foreach ($pairs as $pair) {
-            $value = $normalized[$pair['locale']][$pair['attribute']] ?? null;
+        foreach ($batch as $item) {
+            foreach ($item['pairs'] as $pair) {
+                $value = $normalized[$item['model_id']][$pair['locale']][$pair['attribute']] ?? null;
 
-            if ($value === null || mb_trim($value) === '') {
-                throw new RuntimeException(
-                    "The AI response did not return a translation for [{$pair['locale']}:{$pair['attribute']}]."
-                );
+                if ($value === null || mb_trim($value) === '') {
+                    throw new RuntimeException(
+                        "The AI response did not return a translation for [{$item['model_id']}:{$pair['locale']}:{$pair['attribute']}]."
+                    );
+                }
             }
         }
 
@@ -406,6 +525,34 @@ class ModelTranslator
         $value = mb_trim($value);
 
         return $value === '' ? null : $value;
+    }
+
+    /**
+     * @param  iterable<Model&TranslatableContract>  $models
+     * @return array<int, Model&TranslatableContract>
+     */
+    protected function normalizeModels(iterable $models): array
+    {
+        if ($models instanceof Traversable) {
+            /** @var array<int, Model&TranslatableContract> $models */
+            $models = iterator_to_array($models, false);
+        }
+
+        return array_values($models);
+    }
+
+    /**
+     * @param  array<int, Model&TranslatableContract>  $models
+     */
+    protected function ensureModelsCanBeBatched(array $models): void
+    {
+        $modelClass = $models[0]::class;
+
+        foreach ($models as $model) {
+            if ($model::class !== $modelClass) {
+                throw new InvalidArgumentException('Batched AI translations require all models to be the same class.');
+            }
+        }
     }
 
     /**

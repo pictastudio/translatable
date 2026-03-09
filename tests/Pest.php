@@ -9,5 +9,7 @@ uses(TestCase::class)->in(
     'AiTranslationTest.php',
     'AiTranslationCommandTest.php',
     'AiTranslationApiTest.php',
+    'LocalesApiTest.php',
     'PackageMetadataTest.php',
+    'ConfigMergeTest.php',
 );

@@ -15,9 +15,9 @@ it('translates missing model fields with ai without overwriting existing transla
     TranslateModelAgent::fake([
         [
             'translations' => [
-                ['locale' => 'it', 'attribute' => 'summary', 'value' => 'Un testo lungo da tradurre.'],
-                ['locale' => 'fr', 'attribute' => 'title', 'value' => 'Bienvenue'],
-                ['locale' => 'fr', 'attribute' => 'summary', 'value' => 'Un long texte a traduire.'],
+                ['model_id' => (string) $post->getKey(), 'locale' => 'it', 'attribute' => 'summary', 'value' => 'Un testo lungo da tradurre.'],
+                ['model_id' => (string) $post->getKey(), 'locale' => 'fr', 'attribute' => 'title', 'value' => 'Bienvenue'],
+                ['model_id' => (string) $post->getKey(), 'locale' => 'fr', 'attribute' => 'summary', 'value' => 'Un long texte a traduire.'],
             ],
         ],
     ])->preventStrayPrompts();

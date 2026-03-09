@@ -1,5 +1,7 @@
 <?php
 
+use PictaStudio\Translatable\Translation;
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -55,7 +57,7 @@ return [
     | Translation Storage
     |--------------------------------------------------------------------------
     */
-    'translation_model' => \PictaStudio\Translatable\Translation::class,
+    'translation_model' => Translation::class,
     'locale_key' => 'locale',
     'translations_wrapper' => null,
     'sync_base_attributes' => true,
@@ -88,11 +90,49 @@ return [
         'source_locale' => null,
         'provider' => null,
         'model' => null,
+        'batch_size' => 25,
+        /*
+        |--------------------------------------------------------------------------
+        | Legacy Route Configuration
+        |--------------------------------------------------------------------------
+        |
+        | Deprecated in favor of translatable.routes.api.* and kept to avoid
+        | breaking existing host applications.
+        |
+        */
         'routes' => [
             'enabled' => false,
-            'prefix' => 'translatable/ai',
-            'name' => 'translatable.ai.',
+            'prefix' => 'api/translatable/v1',
+            'name' => 'api.translatable.v1',
             'middleware' => ['api'],
+            'authorization' => [
+                'header' => 'X-Translatable-Token',
+                'token' => env('TRANSLATABLE_AI_ROUTE_TOKEN'),
+                'ability' => null,
+                'using' => null,
+            ],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | API Routes
+    |--------------------------------------------------------------------------
+    */
+    'routes' => [
+        'api' => [
+            'enable' => true,
+            'v1' => [
+                'prefix' => 'api/translatable/v1',
+                'name' => 'api.translatable.v1',
+                'middleware' => ['api'],
+                'authorization' => [
+                    'header' => 'X-Translatable-Token',
+                    'token' => env('TRANSLATABLE_AI_ROUTE_TOKEN'),
+                    'ability' => null,
+                    'using' => null,
+                ],
+            ],
         ],
     ],
 ];

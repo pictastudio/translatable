@@ -108,6 +108,7 @@ This allows keeping non-null translated columns in your tables (for example `nam
 ## AI Translation
 
 The package can translate translatable model attributes with the Laravel AI SDK.
+When multiple models are translated in one command or API request, the package batches them into shared AI calls to reduce cost and latency.
 
 ### Artisan Command
 
@@ -141,12 +142,14 @@ An opt-in API endpoint is available for admin dashboards.
 Enable it in `config/translatable.php`:
 
 ```php
-'ai' => [
-    'routes' => [
-        'enabled' => true,
-        'middleware' => ['api', 'auth:sanctum'],
-        'prefix' => 'translatable/ai',
-        'name' => 'translatable.ai.',
+'routes' => [
+    'api' => [
+        'enable' => true,
+        'v1' => [
+            'middleware' => ['api', 'auth:sanctum'],
+            'prefix' => 'api/translatable/v1',
+            'name' => 'api.translatable.v1',
+        ],
     ],
 ],
 ```
@@ -154,7 +157,25 @@ Enable it in `config/translatable.php`:
 Then call:
 
 ```http
-POST /translatable/ai/translate
+GET /api/translatable/v1/locales
+GET /api/translatable/v1/models
+POST /api/translatable/v1/translate
+Content-Type: application/json
+```
+
+The locales endpoint returns the configured locales and indicates which one is the default locale. It is public and does not use the translation API authorization rules.
+
+The discovery endpoint returns the available translatable models and every translated attribute on each one.
+Each item includes:
+
+- `model`: fully qualified model class name
+- `morph_alias`: registered morph alias when available, otherwise the class name
+- `attributes`: translated field list
+
+Use the same authentication and authorization rules as the translate endpoint.
+
+```http
+POST /api/translatable/v1/translate
 Content-Type: application/json
 ```
 
@@ -162,7 +183,7 @@ Example payload:
 
 ```json
 {
-    "model": "App\\Models\\Page",
+    "model": "page",
     "id": 1,
     "source_locale": "en",
     "target_locales": ["it", "fr", "de"],
@@ -171,4 +192,61 @@ Example payload:
 }
 ```
 
+The `model` field accepts either the fully qualified class name or a registered morph alias such as `page`.
+
 The response includes the translated values and a summary of how many fields were translated.
+
+### API Authorization
+
+The endpoint can be protected with custom host-application logic, a shared header token, or an application ability check:
+
+```php
+'routes' => [
+    'api' => [
+        'v1' => [
+            'authorization' => [
+                'header' => 'X-Translatable-Token',
+                'token' => env('TRANSLATABLE_AI_ROUTE_TOKEN'),
+                'ability' => null,
+                'using' => null,
+            ],
+        ],
+    ],
+],
+```
+
+If `using` is set, it should be an invokable class name resolved from the container and it becomes the authorization source of truth.
+If `token` is set, requests must send the configured header.
+If `ability` is set, the authenticated user must be allowed to perform that ability for the target model class.
+
+For runtime registration, the host application can provide a closure in a service provider:
+
+```php
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+use PictaStudio\Translatable\Http\RouteRequestAuthorizer;
+
+public function boot(): void
+{
+    app(RouteRequestAuthorizer::class)->using(
+        fn (Request $request, string $modelClass): bool => Gate::forUser($request->user())
+            ->allows('translate-model', $modelClass)
+    );
+}
+```
+
+Legacy `translatable.ai.routes.*` configuration is still supported as a fallback, but the versioned `translatable.routes.api.v1.*` structure is now the default.
+
+## Bruno Collection
+
+Publish the Bruno collection with:
+
+```bash
+php artisan vendor:publish --tag=translatable-bruno
+```
+
+Or during package setup:
+
+```bash
+php artisan translatable:install
+```

@@ -11,11 +11,13 @@ class TranslateModelAgent implements Agent, HasStructuredOutput
     use Promptable;
 
     /**
+     * @param  array<int, string>  $modelIds
      * @param  array<int, string>  $targetLocales
      * @param  array<int, string>  $attributes
      */
     public function __construct(
         protected string $sourceLocale,
+        protected array $modelIds,
         protected array $targetLocales,
         protected array $attributes,
         protected int $translationCount,
@@ -25,7 +27,7 @@ class TranslateModelAgent implements Agent, HasStructuredOutput
     {
         return "You translate Laravel model content from {$this->sourceLocale} into the requested locales. " .
             'Preserve meaning, formatting, placeholders, HTML, Markdown, URLs, email addresses, and line breaks. ' .
-            'Return one translated value for each requested locale and attribute pair.';
+            'Return one translated value for each requested model, locale, and attribute pair.';
     }
 
     public function schema(JsonSchema $schema): array
@@ -37,6 +39,7 @@ class TranslateModelAgent implements Agent, HasStructuredOutput
                 ->max($this->translationCount)
                 ->items(
                     $schema->object([
+                        'model_id' => $schema->string()->required()->enum($this->modelIds),
                         'locale' => $schema->string()->required()->enum($this->targetLocales),
                         'attribute' => $schema->string()->required()->enum($this->attributes),
                         'value' => $schema->string()->required()->min(1),

@@ -4,15 +4,12 @@ namespace PictaStudio\Translatable\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Arr;
 use PictaStudio\Translatable\Ai\ModelTranslator;
 use PictaStudio\Translatable\Contracts\Translatable as TranslatableContract;
-use PictaStudio\Translatable\{Locales, Translatable as TranslatableTrait};
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
-use SplFileInfo;
+use PictaStudio\Translatable\Locales;
+use PictaStudio\Translatable\Support\TranslatableModelRegistry;
 
-use function Laravel\Prompts\{confirm, multiselect, select};
+use function Laravel\Prompts\{confirm, multiselect, search};
 
 class TranslateModelsCommand extends Command
 {
@@ -28,9 +25,9 @@ class TranslateModelsCommand extends Command
 
     protected $description = 'Translate translatable models using the Laravel AI SDK';
 
-    public function handle(ModelTranslator $translator, Locales $locales): int
+    public function handle(ModelTranslator $translator, Locales $locales, TranslatableModelRegistry $registry): int
     {
-        $modelClass = $this->argument('model') ?: $this->promptForModelClass();
+        $modelClass = $this->argument('model') ?: $this->promptForModelClass($registry);
 
         if ($modelClass === null) {
             $this->components->error('No translatable models that use the translatable trait were found in this project.');
@@ -62,19 +59,18 @@ class TranslateModelsCommand extends Command
 
         $translatedModels = 0;
         $translatedPairs = 0;
+        $summaries = $translator->translateMany($models->all(), [
+            'source_locale' => $sourceLocale,
+            'target_locales' => $targetLocales,
+            'attributes' => $attributes,
+            'force' => $force,
+            'provider' => $this->option('provider'),
+            'model' => $this->option('ai-model'),
+        ]);
 
-        foreach ($models as $model) {
-            $summary = $translator->translate($model, [
-                'source_locale' => $sourceLocale,
-                'target_locales' => $targetLocales,
-                'attributes' => $attributes,
-                'force' => $force,
-                'provider' => $this->option('provider'),
-                'model' => $this->option('ai-model'),
-            ]);
-
+        foreach ($summaries as $summary) {
             if ($summary['translated_count'] === 0) {
-                $this->components->warn("Skipped {$modelClass}#{$model->getKey()} (nothing to translate).");
+                $this->components->warn("Skipped {$modelClass}#{$summary['model_id']} (nothing to translate).");
 
                 continue;
             }
@@ -83,7 +79,7 @@ class TranslateModelsCommand extends Command
             $translatedPairs += $summary['translated_count'];
 
             $this->components->info(
-                "Translated {$modelClass}#{$model->getKey()} " .
+                "Translated {$modelClass}#{$summary['model_id']} " .
                 "({$summary['translated_count']} field(s), source: {$summary['source_locale']})."
             );
         }
@@ -101,9 +97,9 @@ class TranslateModelsCommand extends Command
             && is_subclass_of($modelClass, TranslatableContract::class);
     }
 
-    protected function promptForModelClass(): ?string
+    protected function promptForModelClass(TranslatableModelRegistry $registry): ?string
     {
-        $models = $this->discoverTranslatableModels();
+        $models = $registry->classes();
 
         if ($models === []) {
             return null;
@@ -113,112 +109,19 @@ class TranslateModelsCommand extends Command
             return $models[0];
         }
 
-        return select(
+        return search(
             label: 'Which model would you like to translate?',
-            options: $models,
-        );
-    }
-
-    /**
-     * @return array<int, class-string<Model&TranslatableContract>>
-     */
-    protected function discoverTranslatableModels(): array
-    {
-        $models = [];
-
-        foreach ($this->autoloadClassCandidates() as $class) {
-            if ($this->isTranslatableModelClass($class) && $this->usesTranslatableTrait($class)) {
-                $models[$class] = $class;
-            }
-        }
-
-        foreach (get_declared_classes() as $class) {
-            if ($this->isTranslatableModelClass($class) && $this->usesTranslatableTrait($class)) {
-                $models[$class] = $class;
-            }
-        }
-
-        ksort($models);
-
-        return array_values($models);
-    }
-
-    /**
-     * @return array<int, class-string>
-     */
-    protected function autoloadClassCandidates(): array
-    {
-        $composerPath = base_path('composer.json');
-
-        if (!is_file($composerPath)) {
-            return [];
-        }
-
-        /** @var array{autoload?: array{psr-4?: array<string, string|array<int, string>>}}|null $composer */
-        $composer = json_decode((string) file_get_contents($composerPath), true);
-        $psr4 = Arr::get($composer, 'autoload.psr-4', []);
-
-        if (!is_array($psr4)) {
-            return [];
-        }
-
-        $classes = [];
-
-        foreach ($psr4 as $namespace => $paths) {
-            if (!is_string($namespace)) {
-                continue;
-            }
-
-            foreach ((array) $paths as $path) {
-                if (!is_string($path) || $path === '') {
-                    continue;
+            options: function (string $value) use ($models): array {
+                if (mb_trim($value) === '') {
+                    return array_values($models);
                 }
 
-                $classes = array_merge($classes, $this->classesFromDirectory($namespace, base_path($path)));
-            }
-        }
-
-        return array_values(array_unique($classes));
-    }
-
-    /**
-     * @return array<int, class-string>
-     */
-    protected function classesFromDirectory(string $namespace, string $directory): array
-    {
-        if (!is_dir($directory)) {
-            return [];
-        }
-
-        $classes = [];
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($directory, RecursiveDirectoryIterator::SKIP_DOTS)
+                return array_values(array_filter(
+                    $models,
+                    static fn (string $model): bool => mb_stripos($model, $value) !== false
+                ));
+            },
         );
-
-        /** @var SplFileInfo $file */
-        foreach ($iterator as $file) {
-            if (!$file->isFile() || $file->getExtension() !== 'php') {
-                continue;
-            }
-
-            $relativePath = str_replace($directory . DIRECTORY_SEPARATOR, '', $file->getPathname());
-            $class = $namespace . str_replace(
-                [DIRECTORY_SEPARATOR, '.php'],
-                ['\\', ''],
-                $relativePath
-            );
-
-            if (class_exists($class)) {
-                $classes[] = $class;
-            }
-        }
-
-        return $classes;
-    }
-
-    protected function usesTranslatableTrait(string $modelClass): bool
-    {
-        return in_array(TranslatableTrait::class, class_uses_recursive($modelClass), true);
     }
 
     /**

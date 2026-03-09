@@ -6,35 +6,47 @@ use PictaStudio\Translatable\Tests\Models\{Post, Product};
 use function Pest\Laravel\artisan;
 
 it('translates models from the artisan command', function (): void {
-    $post = Post::query()->create([
+    $firstPost = Post::query()->create([
         'slug' => 'pricing',
         'title:en' => 'Pricing',
         'summary:en' => 'Choose the right plan for your team.',
         'title:it' => 'Prezzi vecchi',
     ]);
 
+    $secondPost = Post::query()->create([
+        'slug' => 'features',
+        'title:en' => 'Features',
+        'summary:en' => 'Everything your team needs in one place.',
+        'title:it' => 'Funzionalita vecchie',
+    ]);
+
     TranslateModelAgent::fake([
         [
             'translations' => [
-                ['locale' => 'it', 'attribute' => 'title', 'value' => 'Prezzi aggiornati'],
-                ['locale' => 'it', 'attribute' => 'summary', 'value' => 'Scegli il piano giusto per il tuo team.'],
+                ['model_id' => (string) $firstPost->getKey(), 'locale' => 'it', 'attribute' => 'title', 'value' => 'Prezzi aggiornati'],
+                ['model_id' => (string) $firstPost->getKey(), 'locale' => 'it', 'attribute' => 'summary', 'value' => 'Scegli il piano giusto per il tuo team.'],
+                ['model_id' => (string) $secondPost->getKey(), 'locale' => 'it', 'attribute' => 'title', 'value' => 'Funzionalita aggiornate'],
+                ['model_id' => (string) $secondPost->getKey(), 'locale' => 'it', 'attribute' => 'summary', 'value' => 'Tutto cio di cui il tuo team ha bisogno in un solo posto.'],
             ],
         ],
     ])->preventStrayPrompts();
 
     artisan('translatable:translate', [
         'model' => Post::class,
-        '--ids' => [$post->getKey()],
+        '--ids' => [$firstPost->getKey(), $secondPost->getKey()],
         '--source-locale' => 'en',
         '--target-locales' => ['it'],
         '--attributes' => ['title', 'summary'],
         '--force' => true,
     ])->assertSuccessful();
 
-    $post->refresh();
+    $firstPost->refresh();
+    $secondPost->refresh();
 
-    expect($post->{'title:it'})->toBe('Prezzi aggiornati');
-    expect($post->{'summary:it'})->toBe('Scegli il piano giusto per il tuo team.');
+    expect($firstPost->{'title:it'})->toBe('Prezzi aggiornati');
+    expect($firstPost->{'summary:it'})->toBe('Scegli il piano giusto per il tuo team.');
+    expect($secondPost->{'title:it'})->toBe('Funzionalita aggiornate');
+    expect($secondPost->{'summary:it'})->toBe('Tutto cio di cui il tuo team ha bisogno in un solo posto.');
 });
 
 it('prompts for the model and defaults the source locale to the current app locale', function (): void {
@@ -52,8 +64,8 @@ it('prompts for the model and defaults the source locale to the current app loca
     TranslateModelAgent::fake([
         [
             'translations' => [
-                ['locale' => 'fr', 'attribute' => 'title', 'value' => 'Qui nous sommes'],
-                ['locale' => 'fr', 'attribute' => 'summary', 'value' => 'Nous realisons des sites web multilingues.'],
+                ['model_id' => (string) $post->getKey(), 'locale' => 'fr', 'attribute' => 'title', 'value' => 'Qui nous sommes'],
+                ['model_id' => (string) $post->getKey(), 'locale' => 'fr', 'attribute' => 'summary', 'value' => 'Nous realisons des sites web multilingues.'],
             ],
         ],
     ])->preventStrayPrompts();
@@ -61,10 +73,11 @@ it('prompts for the model and defaults the source locale to the current app loca
     artisan('translatable:translate', [
         '--ids' => [$post->getKey()],
     ])
-        ->expectsChoice(
+        ->expectsSearch(
             'Which model would you like to translate?',
             Post::class,
-            [Post::class, Product::class]
+            'Post',
+            [Post::class]
         )
         ->expectsChoice(
             'Which locales would you like to translate into?',

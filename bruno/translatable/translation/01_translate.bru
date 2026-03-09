@@ -1,0 +1,60 @@
+meta {
+  name: Translate models
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/translate
+  body: json
+  auth: inherit
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+  X-Translatable-Token: {{routeToken}}
+}
+
+body:json {
+  {
+    "model": "post",
+    "ids": [
+      1,
+      2
+    ],
+    "source_locale": "en",
+    "target_locales": [
+      "it",
+      "fr"
+    ],
+    "attributes": [
+      "title",
+      "summary"
+    ],
+    "force": false,
+    "provider": "openai",
+    "model_name": "gpt-4.1-mini"
+  }
+}
+
+docs {
+  summary:
+  - Translate one or more translatable Eloquent models through the package API.
+
+  endpoint:
+  - method: POST
+  - path: /translate
+
+  body:
+  - model (string, required): Fully qualified model class name implementing the translatable contract.
+  - model also accepts a morph alias when the application registered one for the model.
+  - id (string|integer, optional): Single model identifier.
+  - ids (array, optional): Multiple model identifiers.
+  - source_locale (string, optional): Source locale. Falls back to configured app locale.
+  - target_locales (string[], optional): Target locales. Defaults to all configured locales except the source locale.
+  - attributes (string[], optional): Translated attributes to process.
+  - force (boolean, optional): Overwrite existing translated values.
+  - provider (string, optional): Laravel AI provider override.
+  - model_name (string, optional): Laravel AI model override.
+}
