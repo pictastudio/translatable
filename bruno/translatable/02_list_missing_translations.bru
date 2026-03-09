@@ -1,0 +1,46 @@
+meta {
+  name: List missing translations
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/missing-translations
+  body: none
+  auth: inherit
+}
+
+params:query {
+  model: post
+  source_locale: en
+  target_locales[]: it
+  target_locales[]: fr
+  attributes[]: title
+  attributes[]: summary
+  per_page: 50
+  page: 1
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+  X-Translatable-Token: {{routeToken}}
+}
+
+docs {
+  summary:
+  - List paginated models that still have at least one actionable missing translation.
+
+  endpoint:
+  - method: GET
+  - path: /missing-translations
+
+  query:
+  - model (string, required): Fully qualified model class name implementing the translatable contract.
+  - model also accepts a morph alias when the application registered one for the model.
+  - source_locale (string, optional): Source locale. Falls back to configured app locale.
+  - target_locales (string[], optional): Target locales. Defaults to all configured locales except the source locale.
+  - attributes (string[], optional): Translated attributes to inspect.
+  - per_page (integer, optional): Page size, between 1 and 100.
+  - page (integer, optional): Result page number.
+}
