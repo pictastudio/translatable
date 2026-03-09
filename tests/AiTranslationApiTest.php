@@ -2,7 +2,8 @@
 
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
-use PictaStudio\Translatable\Ai\Agents\TranslateModelAgent;
+use Illuminate\Support\Facades\Queue;
+use PictaStudio\Translatable\Ai\Jobs\TranslateModelsJob;
 use PictaStudio\Translatable\Http\RouteRequestAuthorizer;
 use PictaStudio\Translatable\Tests\Models\{Post, Product};
 
@@ -19,8 +20,9 @@ beforeEach(function (): void {
     ]);
 });
 
-it('translates selected models through the api endpoint in a single batch', function (): void {
+it('queues selected models for translation through the api endpoint', function (): void {
     config()->set('translatable.ai.routes.authorization.token', 'secret-token');
+    Queue::fake();
 
     $firstPost = Post::query()->create([
         'slug' => 'about',
@@ -34,17 +36,6 @@ it('translates selected models through the api endpoint in a single batch', func
         'summary:en' => 'Reach out to our team.',
     ]);
 
-    TranslateModelAgent::fake([
-        [
-            'translations' => [
-                ['model_id' => (string) $firstPost->getKey(), 'locale' => 'fr', 'attribute' => 'title', 'value' => 'A propos de nous'],
-                ['model_id' => (string) $firstPost->getKey(), 'locale' => 'fr', 'attribute' => 'summary', 'value' => 'Nous construisons des sites web multilingues.'],
-                ['model_id' => (string) $secondPost->getKey(), 'locale' => 'fr', 'attribute' => 'title', 'value' => 'Contact'],
-                ['model_id' => (string) $secondPost->getKey(), 'locale' => 'fr', 'attribute' => 'summary', 'value' => 'Contactez notre equipe.'],
-            ],
-        ],
-    ])->preventStrayPrompts();
-
     withHeader('X-Translatable-Token', 'secret-token')
         ->postJson('/api/translatable/v1/translate', [
             'model' => Post::class,
@@ -52,38 +43,30 @@ it('translates selected models through the api endpoint in a single batch', func
             'source_locale' => 'en',
             'target_locales' => ['fr'],
         ])
-        ->assertOk()
-        ->assertJsonPath('data.0.model_type', 'post')
-        ->assertJsonPath('data.0.model_class', Post::class)
-        ->assertJsonPath('data.0.translated.fr.title', 'A propos de nous')
-        ->assertJsonPath('data.1.translated.fr.summary', 'Contactez notre equipe.')
+        ->assertAccepted()
         ->assertJsonPath('meta.matched_models', 2)
-        ->assertJsonPath('meta.translated_pairs', 4);
+        ->assertJsonPath('meta.queued', true)
+        ->assertJsonPath('meta.queue', 'default')
+        ->assertJsonPath('meta.notification_enabled', true);
 
-    $firstPost->refresh();
-    $secondPost->refresh();
-
-    expect($firstPost->{'title:fr'})->toBe('A propos de nous');
-    expect($firstPost->{'summary:fr'})->toBe('Nous construisons des sites web multilingues.');
-    expect($secondPost->{'title:fr'})->toBe('Contact');
-    expect($secondPost->{'summary:fr'})->toBe('Contactez notre equipe.');
+    Queue::assertPushedOn('default', TranslateModelsJob::class);
+    Queue::assertPushed(TranslateModelsJob::class, function (TranslateModelsJob $job) use ($firstPost, $secondPost): bool {
+        return $job->requestedModel === Post::class
+            && $job->modelClass === Post::class
+            && $job->ids === [$firstPost->getKey(), $secondPost->getKey()]
+            && $job->options['source_locale'] === 'en'
+            && $job->options['target_locales'] === ['fr'];
+    });
 });
 
-it('resolves the model from the registered morph map', function (): void {
+it('queues translation when resolving the model from the registered morph map', function (): void {
     config()->set('translatable.ai.routes.authorization.token', 'secret-token');
+    Queue::fake();
 
     $product = Product::query()->create([
         'name:en' => 'Desk',
         'stock' => 4,
     ]);
-
-    TranslateModelAgent::fake([
-        [
-            'translations' => [
-                ['model_id' => (string) $product->getKey(), 'locale' => 'it', 'attribute' => 'name', 'value' => 'Scrivania'],
-            ],
-        ],
-    ])->preventStrayPrompts();
 
     withHeader('X-Translatable-Token', 'secret-token')
         ->postJson('/api/translatable/v1/translate', [
@@ -92,13 +75,19 @@ it('resolves the model from the registered morph map', function (): void {
             'source_locale' => 'en',
             'target_locales' => ['it'],
         ])
-        ->assertOk()
+        ->assertAccepted()
         ->assertJsonPath('meta.model', 'product')
         ->assertJsonPath('meta.model_class', Product::class)
         ->assertJsonPath('meta.requested_model', 'product')
-        ->assertJsonPath('data.0.model_type', 'product')
-        ->assertJsonPath('data.0.model_class', Product::class)
-        ->assertJsonPath('data.0.translated.it.name', 'Scrivania');
+        ->assertJsonPath('meta.matched_models', 1)
+        ->assertJsonPath('meta.queued', true);
+
+    Queue::assertPushed(TranslateModelsJob::class, function (TranslateModelsJob $job) use ($product): bool {
+        return $job->requestedModel === 'product'
+            && $job->modelClass === Product::class
+            && $job->ids === [$product->getKey()]
+            && $job->options['target_locales'] === ['it'];
+    });
 });
 
 it('lists available translatable models and their fields', function (): void {
@@ -285,6 +274,7 @@ it('rejects unauthorized missing translations requests', function (): void {
 
 it('allows the host application to provide custom authorization logic', function (): void {
     config()->set('translatable.ai.routes.authorization.token', 'secret-token');
+    Queue::fake();
 
     app(RouteRequestAuthorizer::class)->using(
         fn (Request $request, string $modelClass): bool => $request->header('X-Allow-Translate') === 'yes'
@@ -297,15 +287,6 @@ it('allows the host application to provide custom authorization logic', function
         'summary:en' => 'We build multilingual websites.',
     ]);
 
-    TranslateModelAgent::fake([
-        [
-            'translations' => [
-                ['model_id' => (string) $post->getKey(), 'locale' => 'fr', 'attribute' => 'title', 'value' => 'A propos de nous'],
-                ['model_id' => (string) $post->getKey(), 'locale' => 'fr', 'attribute' => 'summary', 'value' => 'Nous construisons des sites web multilingues.'],
-            ],
-        ],
-    ])->preventStrayPrompts();
-
     withHeader('X-Allow-Translate', 'yes')
         ->postJson('/api/translatable/v1/translate', [
             'model' => Post::class,
@@ -313,6 +294,8 @@ it('allows the host application to provide custom authorization logic', function
             'source_locale' => 'en',
             'target_locales' => ['fr'],
         ])
-        ->assertOk()
-        ->assertJsonPath('data.0.translated.fr.title', 'A propos de nous');
+        ->assertAccepted()
+        ->assertJsonPath('meta.queued', true);
+
+    Queue::assertPushed(TranslateModelsJob::class);
 });

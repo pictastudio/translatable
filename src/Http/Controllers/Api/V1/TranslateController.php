@@ -5,7 +5,8 @@ namespace PictaStudio\Translatable\Http\Controllers\Api\V1;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\ValidationException;
-use PictaStudio\Translatable\Ai\ModelTranslator;
+use PictaStudio\Translatable\Ai\Jobs\TranslateModelsJob;
+use PictaStudio\Translatable\Contracts\Translatable as TranslatableContract;
 use PictaStudio\Translatable\Http\Controllers\Api\Controller;
 use PictaStudio\Translatable\Http\Requests\V1\TranslateModelsRequest;
 use PictaStudio\Translatable\Http\RouteRequestAuthorizer;
@@ -15,7 +16,6 @@ class TranslateController extends Controller
 {
     public function store(
         TranslateModelsRequest $request,
-        ModelTranslator $translator,
         RouteRequestAuthorizer $authorizer,
         TranslatableModelRegistry $registry,
     ): JsonResponse {
@@ -41,27 +41,37 @@ class TranslateController extends Controller
             ], 404);
         }
 
-        $results = $translator->translateMany($models->all(), [
+        $options = [
             'source_locale' => $validated['source_locale'] ?? null,
             'target_locales' => $validated['target_locales'] ?? null,
             'attributes' => $validated['attributes'] ?? null,
             'force' => (bool) ($validated['force'] ?? false),
             'provider' => $validated['provider'] ?? null,
             'model' => $validated['model_name'] ?? null,
-        ]);
-        $translatedPairs = array_sum(array_column($results, 'translated_count'));
+        ];
+
+        $user = $request->user();
+
+        TranslateModelsJob::dispatch(
+            requestedModel: $requestedModel,
+            modelClass: $modelClass,
+            ids: $ids,
+            options: $options,
+            notifiable: is_object($user) ? $user : null,
+        );
 
         return response()->json([
-            'data' => $results,
             'meta' => [
                 'model' => $registry->aliasFor($modelClass),
                 'model_class' => $modelClass,
                 'requested_model' => $requestedModel,
                 'requested_ids' => $ids,
-                'matched_models' => count($results),
-                'translated_pairs' => $translatedPairs,
+                'matched_models' => $models->count(),
+                'queued' => true,
+                'queue' => config('translatable.ai.queue.name', 'default'),
+                'notification_enabled' => (bool) config('translatable.ai.notifications.enabled', true),
             ],
-        ]);
+        ], 202);
     }
 
     /**

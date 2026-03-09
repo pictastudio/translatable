@@ -39,6 +39,7 @@ class TestCase extends Orchestra
         config()->set('translatable.locale_header', 'Locale');
         config()->set('translatable.routes.api.enable', true);
         config()->set('translatable.routes.api.v1.middleware', []);
+        config()->set('translatable.ai.queue.name', 'default');
     }
 
     protected function createModelTables(): void
@@ -53,6 +54,15 @@ class TestCase extends Orchestra
             $table->id();
             $table->string('name');
             $table->unsignedInteger('stock')->default(0);
+            $table->timestamps();
+        });
+
+        Schema::create('notifications', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->string('type');
+            $table->morphs('notifiable');
+            $table->text('data');
+            $table->timestamp('read_at')->nullable();
             $table->timestamps();
         });
     }

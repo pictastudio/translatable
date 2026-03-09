@@ -109,6 +109,7 @@ This allows keeping non-null translated columns in your tables (for example `nam
 
 The package can translate translatable model attributes with the Laravel AI SDK.
 When multiple models are translated in one command or API request, the package batches them into shared AI calls to reduce cost and latency.
+API-triggered translations are queued by default on the configured application queue so long-running AI calls do not block the request cycle.
 
 ### Artisan Command
 
@@ -225,7 +226,32 @@ Example payload:
 
 The `model` field accepts either the fully qualified class name or a registered morph alias such as `page`.
 
-The response includes the translated values and a summary of how many fields were translated.
+The response is asynchronous and returns `202 Accepted` after the translation job is queued.
+The queued job performs the AI translation work and can notify the authenticated requester when it completes.
+
+Queue and notification behavior are configured in `config/translatable.php`:
+
+```php
+'ai' => [
+    'queue' => [
+        'connection' => null,
+        'name' => 'default',
+    ],
+    'notifications' => [
+        'enabled' => true,
+        'channels' => ['mail', 'database'],
+        'notifier' => \PictaStudio\Translatable\Notifications\LaravelTranslationRequestNotifier::class,
+    ],
+],
+```
+
+Notes:
+
+- set `ai.queue.name` to choose which queue handles translation jobs; it defaults to `default`
+- set `ai.notifications.enabled` to `false` to skip completion notifications entirely
+- change `ai.notifications.channels` to control which built-in Laravel notification channels run
+- replace `ai.notifications.notifier` with your own implementation of `PictaStudio\Translatable\Contracts\TranslationRequestNotifier` to swap the notification behavior
+- the default `database` channel expects the host application to have Laravel's `notifications` table available
 
 ### API Authorization
 

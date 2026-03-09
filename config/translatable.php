@@ -1,6 +1,7 @@
 <?php
 
 use PictaStudio\Translatable\Translation;
+use PictaStudio\Translatable\Notifications\LaravelTranslationRequestNotifier;
 
 return [
     /*
@@ -91,6 +92,15 @@ return [
         'provider' => null,
         'model' => null,
         'batch_size' => 25,
+        'queue' => [
+            'connection' => null,
+            'name' => 'default',
+        ],
+        'notifications' => [
+            'enabled' => true,
+            'channels' => ['mail', 'database'],
+            'notifier' => LaravelTranslationRequestNotifier::class,
+        ],
         /*
         |--------------------------------------------------------------------------
         | Legacy Route Configuration

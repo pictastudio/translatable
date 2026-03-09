@@ -5,9 +5,12 @@ namespace PictaStudio\Translatable;
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use InvalidArgumentException;
 use PictaStudio\Translatable\Console\Commands\{InstallCommand, TranslateModelsCommand};
+use PictaStudio\Translatable\Contracts\TranslationRequestNotifier;
 use PictaStudio\Translatable\Http\RouteRequestAuthorizer;
 use PictaStudio\Translatable\Middleware\SetLocaleFromHeader;
+use PictaStudio\Translatable\Notifications\LaravelTranslationRequestNotifier;
 
 class TranslatableServiceProvider extends ServiceProvider
 {
@@ -17,6 +20,21 @@ class TranslatableServiceProvider extends ServiceProvider
 
         $this->app->singleton(Locales::class);
         $this->app->singleton(RouteRequestAuthorizer::class);
+        $this->app->bind(TranslationRequestNotifier::class, function ($app): TranslationRequestNotifier {
+            $notifier = $app->make(config(
+                'translatable.ai.notifications.notifier',
+                LaravelTranslationRequestNotifier::class
+            ));
+
+            if (!$notifier instanceof TranslationRequestNotifier) {
+                throw new InvalidArgumentException(sprintf(
+                    'The configured translation notifier must implement [%s].',
+                    TranslationRequestNotifier::class
+                ));
+            }
+
+            return $notifier;
+        });
         $this->app->alias(Locales::class, 'translatable.locales');
         $this->app->alias(Locales::class, 'translatable');
         $this->app->alias(RouteRequestAuthorizer::class, 'translatable.ai.authorizer');
@@ -25,6 +43,37 @@ class TranslatableServiceProvider extends ServiceProvider
             InstallCommand::class,
             TranslateModelsCommand::class,
         ]);
+    }
+
+    public function boot(): void
+    {
+        if ($this->app->runningInConsole()) {
+            $this->publishes([
+                __DIR__ . '/../config/translatable.php' => config_path('translatable.php'),
+            ], 'translatable-config');
+
+            $this->publishesMigrations([
+                __DIR__ . '/../database/migrations/create_translations_table.php' => database_path('migrations/' . date('Y_m_d_His_') . 'create_translations_table.php'),
+            ], 'translatable-migrations');
+
+            $this->publishes([
+                __DIR__ . '/../bruno/translatable' => base_path('bruno/translatable'),
+            ], 'translatable-bruno');
+        }
+
+        if (!$this->shouldRegisterLocaleMiddleware()) {
+            if ($this->shouldRegisterApiRoutes()) {
+                $this->registerApiRoutes();
+            }
+
+            return;
+        }
+
+        $this->registerLocaleMiddleware();
+
+        if ($this->shouldRegisterApiRoutes()) {
+            $this->registerApiRoutes();
+        }
     }
 
     protected function mergeTranslatableConfig(): void
@@ -67,37 +116,6 @@ class TranslatableServiceProvider extends ServiceProvider
         }
 
         return $defaults;
-    }
-
-    public function boot(): void
-    {
-        if ($this->app->runningInConsole()) {
-            $this->publishes([
-                __DIR__ . '/../config/translatable.php' => config_path('translatable.php'),
-            ], 'translatable-config');
-
-            $this->publishesMigrations([
-                __DIR__ . '/../database/migrations/create_translations_table.php' => database_path('migrations/' . date('Y_m_d_His_') . 'create_translations_table.php'),
-            ], 'translatable-migrations');
-
-            $this->publishes([
-                __DIR__ . '/../bruno/translatable' => base_path('bruno/translatable'),
-            ], 'translatable-bruno');
-        }
-
-        if (!$this->shouldRegisterLocaleMiddleware()) {
-            if ($this->shouldRegisterApiRoutes()) {
-                $this->registerApiRoutes();
-            }
-
-            return;
-        }
-
-        $this->registerLocaleMiddleware();
-
-        if ($this->shouldRegisterApiRoutes()) {
-            $this->registerApiRoutes();
-        }
     }
 
     protected function shouldRegisterLocaleMiddleware(): bool
