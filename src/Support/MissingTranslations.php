@@ -5,6 +5,8 @@ namespace PictaStudio\Translatable\Support;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Pagination\LengthAwarePaginator as Paginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
 use InvalidArgumentException;
 use PictaStudio\Translatable\Contracts\Translatable as TranslatableContract;
@@ -14,24 +16,24 @@ class MissingTranslations
 {
     public function __construct(
         protected Locales $locales,
+        protected TranslatableModelRegistry $registry,
     ) {}
 
     /**
-     * @param  class-string<Model&TranslatableContract>  $modelClass
+     * @param  array<int, class-string<Model&TranslatableContract>>  $modelClasses
      * @param  array{
      *     source_locale?: string|null,
      *     target_locales?: array<int, string>|null,
-     *     attributes?: array<int, string>|null,
      *     per_page?: int|null,
      *     page?: int|null
      * }  $options
      * @return array{
      *     source_locale: string,
      *     target_locales: array<int, string>,
-     *     attributes: array<int, string>,
      *     paginator: LengthAwarePaginator,
      *     data: array<int, array{
-     *         model_type: class-string<Model>,
+     *         model_type: string,
+     *         model_class: class-string<Model>,
      *         model_id: mixed,
      *         source_locale: string,
      *         target_locales: array<int, string>,
@@ -42,20 +44,78 @@ class MissingTranslations
      *     }>
      * }
      */
-    public function paginate(string $modelClass, array $options = []): array
+    public function paginate(array $modelClasses, array $options = []): array
+    {
+        $sourceLocale = $this->resolveSourceLocale($options['source_locale'] ?? null);
+        $targetLocales = $this->resolveTargetLocales($options['target_locales'] ?? null, $sourceLocale);
+        $perPage = max(1, min((int) ($options['per_page'] ?? 50), 100));
+        $page = max(1, (int) ($options['page'] ?? 1));
+
+        $rows = collect();
+
+        foreach ($modelClasses as $modelClass) {
+            $rows = $rows->concat($this->rowsForModelClass($modelClass, $sourceLocale, $targetLocales));
+        }
+
+        $rows = $rows
+            ->sortBy([
+                ['model_type', 'asc'],
+                ['model_id', 'asc'],
+            ])
+            ->values();
+
+        $paginator = new Paginator(
+            items: $rows->forPage($page, $perPage)->values(),
+            total: $rows->count(),
+            perPage: $perPage,
+            currentPage: $page,
+            options: [
+                'path' => Paginator::resolveCurrentPath(),
+                'pageName' => 'page',
+                'query' => request()->query(),
+            ],
+        );
+
+        return [
+            'source_locale' => $sourceLocale,
+            'target_locales' => $targetLocales,
+            'paginator' => $paginator,
+            'data' => $paginator->items(),
+        ];
+    }
+
+    /**
+     * @return array<int, class-string<Model&TranslatableContract>>
+     */
+    public function allModelClasses(): array
+    {
+        return $this->registry->classes();
+    }
+
+    /**
+     * @param  class-string<Model&TranslatableContract>  $modelClass
+     * @return Collection<int, array{
+     *     model_type: string,
+     *     model_class: class-string<Model>,
+     *     model_id: mixed,
+     *     source_locale: string,
+     *     target_locales: array<int, string>,
+     *     translated_attributes: array<int, string>,
+     *     source_values: array<string, string>,
+     *     missing: array<string, array<int, string>>,
+     *     missing_count: int
+     * }>
+     */
+    protected function rowsForModelClass(string $modelClass, string $sourceLocale, array $targetLocales): Collection
     {
         /** @var Model&TranslatableContract $model */
         $model = new $modelClass;
-        $sourceLocale = $this->resolveSourceLocale($options['source_locale'] ?? null);
-        $targetLocales = $this->resolveTargetLocales($options['target_locales'] ?? null, $sourceLocale);
-        $attributes = $this->resolveAttributes($model, $options['attributes'] ?? null);
+        $attributes = $this->resolveAttributes($model);
         $baseColumns = $this->resolveBaseColumns($model, $attributes);
-        $perPage = max(1, min((int) ($options['per_page'] ?? 50), 100));
-        $page = max(1, (int) ($options['page'] ?? 1));
         $localeKey = $model->getLocaleKey();
 
-        /** @var LengthAwarePaginator $paginator */
-        $paginator = $modelClass::query()
+        /** @var Collection<int, Model&TranslatableContract> $models */
+        $models = $modelClass::query()
             ->where(function (Builder $query) use ($sourceLocale, $targetLocales, $attributes, $baseColumns, $localeKey): void {
                 foreach ($targetLocales as $targetLocale) {
                     foreach ($attributes as $attribute) {
@@ -107,9 +167,9 @@ class MissingTranslations
                 }
             })
             ->orderBy($model->getQualifiedKeyName())
-            ->paginate($perPage, ['*'], 'page', $page);
+            ->get();
 
-        $paginator->getCollection()->load([
+        $models->load([
             'translations' => function ($query) use ($localeKey, $sourceLocale, $targetLocales, $attributes): void {
                 $query
                     ->whereIn($localeKey, array_values(array_unique([...$targetLocales, $sourceLocale])))
@@ -117,7 +177,7 @@ class MissingTranslations
             },
         ]);
 
-        $data = $paginator->getCollection()
+        return $models
             ->map(function (Model $entry) use ($modelClass, $sourceLocale, $targetLocales, $attributes, $baseColumns): array {
                 /** @var Model&TranslatableContract $entry */
                 $sourceValues = [];
@@ -151,7 +211,8 @@ class MissingTranslations
                 }
 
                 return [
-                    'model_type' => $modelClass,
+                    'model_type' => $this->registry->aliasFor($modelClass),
+                    'model_class' => $modelClass,
                     'model_id' => $entry->getKey(),
                     'source_locale' => $sourceLocale,
                     'target_locales' => $targetLocales,
@@ -161,24 +222,13 @@ class MissingTranslations
                     'missing_count' => array_sum(array_map('count', $missing)),
                 ];
             })
-            ->values()
-            ->all();
-
-        return [
-            'source_locale' => $sourceLocale,
-            'target_locales' => $targetLocales,
-            'attributes' => $attributes,
-            'paginator' => $paginator,
-            'data' => $data,
-        ];
+            ->filter(static fn (array $row): bool => $row['missing_count'] > 0)
+            ->values();
     }
 
     protected function resolveSourceLocale(?string $sourceLocale): string
     {
-        $sourceLocale = $this->normalizeNullableString($sourceLocale)
-            ?? $this->normalizeNullableString(config('translatable.ai.source_locale'))
-            ?? $this->locales->fallback()
-            ?? $this->locales->current();
+        $sourceLocale = $this->normalizeNullableString($sourceLocale) ?? $this->locales->current();
 
         if (!$this->locales->has($sourceLocale)) {
             throw new InvalidArgumentException("The source locale [{$sourceLocale}] is not configured as translatable.");
@@ -215,23 +265,14 @@ class MissingTranslations
     }
 
     /**
-     * @param  array<int, string>|null  $attributes
      * @return array<int, string>
      */
-    protected function resolveAttributes(Model&TranslatableContract $model, ?array $attributes): array
+    protected function resolveAttributes(Model&TranslatableContract $model): array
     {
-        $attributes = $this->normalizeStringArray($attributes ?? $model->translatedAttributes);
+        $attributes = $this->normalizeStringArray($model->translatedAttributes);
 
         if ($attributes === []) {
             throw new InvalidArgumentException('At least one translated attribute must be provided.');
-        }
-
-        foreach ($attributes as $attribute) {
-            if (!$model->isTranslationAttribute($attribute)) {
-                throw new InvalidArgumentException(
-                    "The attribute [{$attribute}] is not marked as translatable on [" . $model::class . '].'
-                );
-            }
         }
 
         return $attributes;

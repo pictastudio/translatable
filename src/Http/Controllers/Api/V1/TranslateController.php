@@ -9,6 +9,7 @@ use PictaStudio\Translatable\Ai\ModelTranslator;
 use PictaStudio\Translatable\Http\Controllers\Api\Controller;
 use PictaStudio\Translatable\Http\Requests\V1\TranslateModelsRequest;
 use PictaStudio\Translatable\Http\RouteRequestAuthorizer;
+use PictaStudio\Translatable\Support\TranslatableModelRegistry;
 
 class TranslateController extends Controller
 {
@@ -16,6 +17,7 @@ class TranslateController extends Controller
         TranslateModelsRequest $request,
         ModelTranslator $translator,
         RouteRequestAuthorizer $authorizer,
+        TranslatableModelRegistry $registry,
     ): JsonResponse {
         $validated = $request->validated();
         $requestedModel = $validated['model'];
@@ -52,7 +54,8 @@ class TranslateController extends Controller
         return response()->json([
             'data' => $results,
             'meta' => [
-                'model' => $modelClass,
+                'model' => $registry->aliasFor($modelClass),
+                'model_class' => $modelClass,
                 'requested_model' => $requestedModel,
                 'requested_ids' => $ids,
                 'matched_models' => count($results),

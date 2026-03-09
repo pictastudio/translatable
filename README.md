@@ -176,10 +176,18 @@ Each item includes:
 Use the same authentication and authorization rules as the translate endpoint.
 
 ```http
-GET /api/translatable/v1/missing-translations?model=page&source_locale=en&target_locales[]=fr&per_page=50
+GET /api/translatable/v1/missing-translations
+GET /api/translatable/v1/missing-translations?model=page&per_page=50&page=2
 ```
 
 The missing translations endpoint returns paginated model rows that still have at least one actionable missing translation.
+All query parameters are optional.
+When omitted, the endpoint:
+
+- scans all discoverable translatable models
+- uses the current app locale as the source locale
+- checks every other configured locale as a target locale
+
 An item is included only when:
 
 - at least one requested attribute has a non-empty source value
@@ -187,8 +195,12 @@ An item is included only when:
 
 Each item includes:
 
-- `model_type`: fully qualified model class name
+- `model_type`: morph alias when available, otherwise the fully qualified model class name
+- `model_class`: fully qualified model class name
 - `model_id`: model primary key
+- `source_locale`: the source locale used for the row
+- `target_locales`: all checked target locales
+- `translated_attributes`: translated attributes defined on that model
 - `source_values`: source-locale values that can be translated
 - `missing`: target locale to missing attribute list map
 - `missing_count`: total missing locale/attribute pairs for that row

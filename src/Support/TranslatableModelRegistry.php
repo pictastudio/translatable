@@ -13,6 +13,15 @@ use SplFileInfo;
 
 class TranslatableModelRegistry
 {
+    public function aliasFor(string $modelClass): string
+    {
+        /** @var Model&TranslatableContract $model */
+        $model = new $modelClass;
+        $morphClass = $model->getMorphClass();
+
+        return $morphClass === $modelClass ? $this->resolveMorphAlias($modelClass) : $morphClass;
+    }
+
     /**
      * @return array<int, class-string<Model&TranslatableContract>>
      */
@@ -45,11 +54,10 @@ class TranslatableModelRegistry
         return array_map(function (string $modelClass): array {
             /** @var Model&TranslatableContract $model */
             $model = new $modelClass;
-            $morphClass = $model->getMorphClass();
 
             return [
                 'model' => $modelClass,
-                'morph_alias' => $morphClass === $modelClass ? $this->resolveMorphAlias($modelClass) : $morphClass,
+                'morph_alias' => $this->aliasFor($modelClass),
                 'attributes' => array_values($model->translatedAttributes),
             ];
         }, $this->classes());

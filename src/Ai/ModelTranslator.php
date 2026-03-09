@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use PictaStudio\Translatable\Ai\Agents\TranslateModelAgent;
 use PictaStudio\Translatable\Contracts\Translatable as TranslatableContract;
 use PictaStudio\Translatable\Locales;
+use PictaStudio\Translatable\Support\TranslatableModelRegistry;
 use RuntimeException;
 use Traversable;
 
@@ -15,6 +16,7 @@ class ModelTranslator
 {
     public function __construct(
         protected Locales $locales,
+        protected TranslatableModelRegistry $registry,
     ) {}
 
     /**
@@ -27,7 +29,8 @@ class ModelTranslator
      *      model?: string|null
      *  }  $options
      * @return array{
-     *      model_type: class-string<Model>,
+     *      model_type: string,
+     *      model_class: class-string<Model>,
      *      model_id: mixed,
      *      source_locale: string,
      *      target_locales: array<int, string>,
@@ -56,7 +59,8 @@ class ModelTranslator
      *      model?: string|null
      *  }  $options
      * @return array<int, array{
-     *      model_type: class-string<Model>,
+     *      model_type: string,
+     *      model_class: class-string<Model>,
      *      model_id: mixed,
      *      source_locale: string,
      *      target_locales: array<int, string>,
@@ -451,7 +455,8 @@ class ModelTranslator
      * @param  array<string, array<string, string>>  $translations
      * @param  array<int, array{locale: string, attribute: string, reason: string}>  $skipped
      * @return array{
-     *      model_type: class-string<Model>,
+     *      model_type: string,
+     *      model_class: class-string<Model>,
      *      model_id: mixed,
      *      source_locale: string,
      *      target_locales: array<int, string>,
@@ -478,7 +483,8 @@ class ModelTranslator
         }
 
         return [
-            'model_type' => $model::class,
+            'model_type' => $this->registry->aliasFor($model::class),
+            'model_class' => $model::class,
             'model_id' => $model->getKey(),
             'source_locale' => $sourceLocale,
             'target_locales' => $targetLocales,
