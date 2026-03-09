@@ -266,8 +266,12 @@ Queue behavior is configured in `config/translatable.php`:
 Notes:
 
 - set `ai.queue.name` to choose which queue handles translation jobs; it defaults to `default`
+- set `TRANSLATABLE_AI_QUEUE_CONNECTION` to choose the queue connection
+- set `TRANSLATABLE_AI_QUEUE_NAME` to choose the queue name
 - set `commands.translate_missing.enabled` to `true` to auto-register the scheduled command
 - set `commands.translate_missing.schedule` to the cron expression you want Laravel's scheduler to use
+- set `TRANSLATABLE_TRANSLATE_MISSING_ENABLED=true` to enable the scheduled command from `.env`
+- set `TRANSLATABLE_TRANSLATE_MISSING_SCHEDULE="0 * * * *"` to configure its cron expression from `.env`
 
 Listen for `PictaStudio\Translatable\Events\AiTranslationsCompleted` in your application if you want to react after the job finishes:
 
@@ -321,8 +325,6 @@ public function boot(): void
     );
 }
 ```
-
-Legacy `translatable.ai.routes.*` configuration is still supported as a fallback, but the versioned `translatable.routes.api.v1.*` structure is now the default.
 
 ## Bruno Collection
 

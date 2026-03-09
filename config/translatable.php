@@ -92,29 +92,8 @@ return [
         'model' => null,
         'batch_size' => 25,
         'queue' => [
-            'connection' => null,
-            'name' => 'default',
-        ],
-        /*
-        |--------------------------------------------------------------------------
-        | Legacy Route Configuration
-        |--------------------------------------------------------------------------
-        |
-        | Deprecated in favor of translatable.routes.api.* and kept to avoid
-        | breaking existing host applications.
-        |
-        */
-        'routes' => [
-            'enabled' => false,
-            'prefix' => 'api/translatable/v1',
-            'name' => 'api.translatable.v1',
-            'middleware' => ['api'],
-            'authorization' => [
-                'header' => 'X-Translatable-Token',
-                'token' => env('TRANSLATABLE_AI_ROUTE_TOKEN'),
-                'ability' => null,
-                'using' => null,
-            ],
+            'connection' => env('TRANSLATABLE_AI_QUEUE_CONNECTION'),
+            'name' => env('TRANSLATABLE_AI_QUEUE_NAME', 'default'),
         ],
     ],
 
@@ -142,8 +121,8 @@ return [
 
     'commands' => [
         'translate_missing' => [
-            'enabled' => false,
-            'schedule' => '0 * * * *',
+            'enabled' => env('TRANSLATABLE_TRANSLATE_MISSING_ENABLED', false),
+            'schedule' => env('TRANSLATABLE_TRANSLATE_MISSING_SCHEDULE', '0 * * * *'),
         ],
     ],
 ];

@@ -93,13 +93,7 @@ class RouteRequestAuthorizer
 
     protected function authorizationConfig(string $key, mixed $default = null): mixed
     {
-        $current = config("translatable.routes.api.v1.authorization.{$key}");
-
-        if ($current !== null && $current !== '') {
-            return $current;
-        }
-
-        return config("translatable.ai.routes.authorization.{$key}", $default);
+        return config("translatable.routes.api.v1.authorization.{$key}", $default);
     }
 
     /**

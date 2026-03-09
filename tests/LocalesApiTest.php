@@ -27,7 +27,7 @@ it('lists available locales and marks the default locale', function (): void {
 });
 
 it('does not require translation api authorization to list locales', function (): void {
-    config()->set('translatable.ai.routes.authorization.token', 'secret-token');
+    config()->set('translatable.routes.api.v1.authorization.token', 'secret-token');
 
     getJson('/api/translatable/v1/locales')
         ->assertOk()

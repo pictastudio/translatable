@@ -122,11 +122,14 @@ it('translates missing translations across all translatable models from the dedi
             'translations' => [
                 ['model_id' => (string) $post->getKey(), 'locale' => 'it', 'attribute' => 'title', 'value' => 'Prezzi'],
                 ['model_id' => (string) $post->getKey(), 'locale' => 'it', 'attribute' => 'summary', 'value' => 'Scegli il piano giusto per il tuo team.'],
+                ['model_id' => (string) $post->getKey(), 'locale' => 'fr', 'attribute' => 'title', 'value' => 'Tarifs'],
+                ['model_id' => (string) $post->getKey(), 'locale' => 'fr', 'attribute' => 'summary', 'value' => 'Choisissez le bon plan pour votre equipe.'],
             ],
         ],
         [
             'translations' => [
                 ['model_id' => (string) $product->getKey(), 'locale' => 'it', 'attribute' => 'name', 'value' => 'Sedia'],
+                ['model_id' => (string) $product->getKey(), 'locale' => 'fr', 'attribute' => 'name', 'value' => 'Chaise'],
             ],
         ],
     ])->preventStrayPrompts();
@@ -142,6 +145,54 @@ it('translates missing translations across all translatable models from the dedi
     expect($post->{'title:it'})->toBe('Prezzi');
     expect($post->{'summary:it'})->toBe('Scegli il piano giusto per il tuo team.');
     expect($product->{'name:it'})->toBe('Sedia');
+});
+
+it('defaults the missing translation command to the current app locale and all configured locales', function (): void {
+    app()->setLocale('en');
+
+    $post = Post::query()->create([
+        'slug' => 'pricing',
+        'title:en' => 'Pricing',
+        'summary:en' => 'Choose the right plan for your team.',
+    ]);
+
+    $product = Product::query()->create([
+        'name:en' => 'Chair',
+        'stock' => 4,
+    ]);
+
+    TranslateModelAgent::fake([
+        [
+            'translations' => [
+                ['model_id' => (string) $post->getKey(), 'locale' => 'it', 'attribute' => 'title', 'value' => 'Prezzi'],
+                ['model_id' => (string) $post->getKey(), 'locale' => 'it', 'attribute' => 'summary', 'value' => 'Scegli il piano giusto per il tuo team.'],
+                ['model_id' => (string) $post->getKey(), 'locale' => 'fr', 'attribute' => 'title', 'value' => 'Tarifs'],
+                ['model_id' => (string) $post->getKey(), 'locale' => 'fr', 'attribute' => 'summary', 'value' => 'Choisissez le bon plan pour votre equipe.'],
+            ],
+        ],
+        [
+            'translations' => [
+                ['model_id' => (string) $product->getKey(), 'locale' => 'it', 'attribute' => 'name', 'value' => 'Sedia'],
+                ['model_id' => (string) $product->getKey(), 'locale' => 'fr', 'attribute' => 'name', 'value' => 'Chaise'],
+            ],
+        ],
+    ])->preventStrayPrompts();
+
+    artisan('translatable:translate-missing')->assertSuccessful();
+
+    $post->refresh();
+    $product->refresh();
+
+    expect($post->{'title:it'})->toBe('Prezzi');
+    expect($post->{'summary:it'})->toBe('Scegli il piano giusto per il tuo team.');
+    expect($post->{'title:fr'})->toBe('Tarifs');
+    expect($post->{'summary:fr'})->toBe('Choisissez le bon plan pour votre equipe.');
+    expect($product->{'name:it'})->toBe('Sedia');
+    expect($product->{'name:fr'})->toBe('Chaise');
+
+    TranslateModelAgent::assertPrompted(function ($prompt): bool {
+        return $prompt->contains('"source_locale": "en"');
+    });
 });
 
 it('registers the dedicated missing translation command schedule from config', function (): void {

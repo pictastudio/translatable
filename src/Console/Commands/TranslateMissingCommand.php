@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use PictaStudio\Translatable\Ai\ModelTranslator;
 use PictaStudio\Translatable\Contracts\Translatable as TranslatableContract;
+use PictaStudio\Translatable\Locales;
 use PictaStudio\Translatable\Support\MissingTranslations;
 
 class TranslateMissingCommand extends Command
@@ -22,12 +23,13 @@ class TranslateMissingCommand extends Command
     public function handle(
         MissingTranslations $missingTranslations,
         ModelTranslator $translator,
+        Locales $locales,
     ): int {
         $results = $missingTranslations->collect(
             $missingTranslations->allModelClasses(),
             [
-                'source_locale' => $this->option('source-locale'),
-                'target_locales' => $this->option('target-locales'),
+                'source_locale' => $this->resolveSourceLocale($locales),
+                'target_locales' => $this->resolveTargetLocales($locales),
                 'accepted' => true,
             ],
         );
@@ -91,5 +93,30 @@ class TranslateMissingCommand extends Command
         $this->components->info("Updated {$translatedModels} model(s) with {$translatedPairs} translated field(s).");
 
         return self::SUCCESS;
+    }
+
+    protected function resolveSourceLocale(Locales $locales): string
+    {
+        $sourceLocale = $this->option('source-locale');
+
+        if (is_string($sourceLocale) && $sourceLocale !== '') {
+            return $sourceLocale;
+        }
+
+        return $locales->current();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function resolveTargetLocales(Locales $locales): array
+    {
+        $targetLocales = $this->option('target-locales');
+
+        if (is_array($targetLocales) && $targetLocales !== []) {
+            return $targetLocales;
+        }
+
+        return $locales->all();
     }
 }

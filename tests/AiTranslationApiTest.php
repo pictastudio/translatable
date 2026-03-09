@@ -21,7 +21,7 @@ beforeEach(function (): void {
 });
 
 it('queues selected models for translation through the api endpoint', function (): void {
-    config()->set('translatable.ai.routes.authorization.token', 'secret-token');
+    config()->set('translatable.routes.api.v1.authorization.token', 'secret-token');
     Queue::fake();
 
     $firstPost = Post::query()->create([
@@ -59,7 +59,7 @@ it('queues selected models for translation through the api endpoint', function (
 });
 
 it('queues translation when resolving the model from the registered morph map', function (): void {
-    config()->set('translatable.ai.routes.authorization.token', 'secret-token');
+    config()->set('translatable.routes.api.v1.authorization.token', 'secret-token');
     Queue::fake();
 
     $product = Product::query()->create([
@@ -90,7 +90,7 @@ it('queues translation when resolving the model from the registered morph map', 
 });
 
 it('lists available translatable models and their fields', function (): void {
-    config()->set('translatable.ai.routes.authorization.token', 'secret-token');
+    config()->set('translatable.routes.api.v1.authorization.token', 'secret-token');
 
     withHeader('X-Translatable-Token', 'secret-token')
         ->getJson('/api/translatable/v1/models')
@@ -109,7 +109,7 @@ it('lists available translatable models and their fields', function (): void {
 });
 
 it('lists missing translations across all translatable models with pagination by default', function (): void {
-    config()->set('translatable.ai.routes.authorization.token', 'secret-token');
+    config()->set('translatable.routes.api.v1.authorization.token', 'secret-token');
 
     $firstPost = Post::query()->create([
         'slug' => 'about',
@@ -191,7 +191,7 @@ it('lists missing translations across all translatable models with pagination by
 });
 
 it('filters missing translations by accepted state', function (): void {
-    config()->set('translatable.ai.routes.authorization.token', 'secret-token');
+    config()->set('translatable.routes.api.v1.authorization.token', 'secret-token');
 
     $acceptedPost = Post::query()->create([
         'slug' => 'accepted',
@@ -287,7 +287,7 @@ it('filters the models endpoint to only authorized models', function (): void {
 });
 
 it('rejects unauthorized api translation requests', function (): void {
-    config()->set('translatable.ai.routes.authorization.token', 'secret-token');
+    config()->set('translatable.routes.api.v1.authorization.token', 'secret-token');
 
     $post = Post::query()->create([
         'slug' => 'about',
@@ -304,14 +304,14 @@ it('rejects unauthorized api translation requests', function (): void {
 });
 
 it('rejects unauthorized missing translations requests', function (): void {
-    config()->set('translatable.ai.routes.authorization.token', 'secret-token');
+    config()->set('translatable.routes.api.v1.authorization.token', 'secret-token');
 
     getJson('/api/translatable/v1/missing-translations')
         ->assertForbidden();
 });
 
 it('allows the host application to provide custom authorization logic', function (): void {
-    config()->set('translatable.ai.routes.authorization.token', 'secret-token');
+    config()->set('translatable.routes.api.v1.authorization.token', 'secret-token');
     Queue::fake();
 
     app(RouteRequestAuthorizer::class)->using(

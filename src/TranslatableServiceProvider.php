@@ -130,8 +130,7 @@ class TranslatableServiceProvider extends ServiceProvider
 
     protected function shouldRegisterApiRoutes(): bool
     {
-        return (bool) config('translatable.routes.api.enable', false)
-            || (bool) config('translatable.ai.routes.enabled', false);
+        return (bool) config('translatable.routes.api.enable', false);
     }
 
     protected function registerApiRoutes(): void
@@ -152,41 +151,22 @@ class TranslatableServiceProvider extends ServiceProvider
     protected function apiRouteMiddleware(): array
     {
         $middleware = config('translatable.routes.api.v1.middleware');
-        $legacyMiddleware = config('translatable.ai.routes.middleware');
-
-        if (is_array($legacyMiddleware) && $legacyMiddleware !== ['api'] && $middleware === ['api']) {
-            return $legacyMiddleware;
-        }
 
         if (is_array($middleware)) {
             return $middleware;
         }
 
-        return is_array($legacyMiddleware) ? $legacyMiddleware : ['api'];
+        return ['api'];
     }
 
     protected function apiRoutePrefix(): string
     {
-        $prefix = (string) config('translatable.routes.api.v1.prefix', 'api/translatable/v1');
-        $legacyPrefix = (string) config('translatable.ai.routes.prefix', 'api/translatable/v1');
-
-        if ($prefix === 'api/translatable/v1' && $legacyPrefix !== 'api/translatable/v1') {
-            return $legacyPrefix;
-        }
-
-        return $prefix;
+        return (string) config('translatable.routes.api.v1.prefix', 'api/translatable/v1');
     }
 
     protected function apiRouteName(): string
     {
-        $name = (string) config('translatable.routes.api.v1.name', 'api.translatable.v1');
-        $legacyName = (string) config('translatable.ai.routes.name', 'api.translatable.v1');
-
-        if ($name === 'api.translatable.v1' && $legacyName !== 'api.translatable.v1') {
-            return $legacyName;
-        }
-
-        return $name;
+        return (string) config('translatable.routes.api.v1.name', 'api.translatable.v1');
     }
 
     protected function registerCommandScheduling(): void
