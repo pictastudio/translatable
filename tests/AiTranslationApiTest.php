@@ -89,6 +89,163 @@ it('queues translation when resolving the model from the registered morph map', 
     });
 });
 
+it('validates translate payload field types and values', function (): void {
+    config()->set('translatable.routes.api.v1.authorization.token', 'secret-token');
+
+    withHeader('X-Translatable-Token', 'secret-token')
+        ->postJson('/api/translatable/v1/translate', [
+            'model' => 'missing-model',
+            'id' => ['invalid'],
+            'ids' => 'invalid',
+            'source_locale' => 'es',
+            'target_locales' => 'invalid',
+            'attributes' => 'invalid',
+            'force' => 'invalid',
+            'provider' => 'missing-provider',
+            'model_name' => ['invalid'],
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors([
+            'model',
+            'id',
+            'ids',
+            'source_locale',
+            'target_locales',
+            'attributes',
+            'force',
+            'provider',
+            'model_name',
+        ]);
+});
+
+it('validates translate payload locale and attribute entries', function (): void {
+    config()->set('translatable.routes.api.v1.authorization.token', 'secret-token');
+
+    $post = Post::query()->create([
+        'slug' => 'about',
+        'title:en' => 'About us',
+        'summary:en' => 'We build multilingual websites.',
+    ]);
+
+    withHeader('X-Translatable-Token', 'secret-token')
+        ->postJson('/api/translatable/v1/translate', [
+            'model' => Post::class,
+            'id' => $post->getKey(),
+            'target_locales' => ['fr', 'es'],
+            'attributes' => ['name'],
+            'provider' => 'openai',
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors([
+            'target_locales.1',
+            'attributes.0',
+        ]);
+});
+
+it('defaults translate source_locale to the app locale and target_locales to all available locales', function (): void {
+    config()->set('translatable.routes.api.v1.authorization.token', 'secret-token');
+    config()->set('app.locale', 'fr');
+    config()->set('translatable.locale', null);
+    Queue::fake();
+
+    $post = Post::query()->create([
+        'slug' => 'about',
+        'title:fr' => 'A propos',
+        'summary:fr' => 'Nous construisons des sites multilingues.',
+    ]);
+
+    withHeader('X-Translatable-Token', 'secret-token')
+        ->postJson('/api/translatable/v1/translate', [
+            'model' => Post::class,
+            'id' => $post->getKey(),
+        ])
+        ->assertAccepted()
+        ->assertJsonPath('meta.matched_models', 1)
+        ->assertJsonPath('meta.queued', true);
+
+    Queue::assertPushed(TranslateModelsJob::class, function (TranslateModelsJob $job) use ($post): bool {
+        return $job->requestedModel === Post::class
+            && $job->modelClass === Post::class
+            && $job->ids === [$post->getKey()]
+            && $job->options['source_locale'] === 'fr'
+            && $job->options['target_locales'] === ['en', 'it', 'fr'];
+    });
+});
+
+it('queues all missing translations when no model and ids are provided', function (): void {
+    config()->set('translatable.routes.api.v1.authorization.token', 'secret-token');
+    Queue::fake();
+
+    $post = Post::query()->create([
+        'slug' => 'about',
+        'title:en' => 'About us',
+        'summary:en' => 'We build multilingual websites.',
+        'title:fr' => 'A propos',
+    ]);
+
+    $product = Product::query()->create([
+        'name' => 'Desk',
+        'stock' => 4,
+    ]);
+
+    Post::query()->create([
+        'slug' => 'pricing',
+        'title:en' => 'Pricing',
+        'summary:en' => 'Simple and predictable.',
+        'title:fr' => 'Tarifs',
+        'summary:fr' => 'Simple et previsible.',
+    ]);
+
+    withHeader('X-Translatable-Token', 'secret-token')
+        ->postJson('/api/translatable/v1/translate', [
+            'source_locale' => 'en',
+            'target_locales' => ['fr'],
+        ])
+        ->assertAccepted()
+        ->assertJsonPath('meta.model', null)
+        ->assertJsonPath('meta.model_class', null)
+        ->assertJsonPath('meta.requested_model', null)
+        ->assertJsonPath('meta.requested_ids', [])
+        ->assertJsonPath('meta.models.0', 'post')
+        ->assertJsonPath('meta.models.1', 'product')
+        ->assertJsonPath('meta.model_classes.0', Post::class)
+        ->assertJsonPath('meta.model_classes.1', Product::class)
+        ->assertJsonPath('meta.matched_models', 2)
+        ->assertJsonPath('meta.queued_jobs', 2)
+        ->assertJsonPath('meta.queued', true);
+
+    Queue::assertPushed(TranslateModelsJob::class, 2);
+    Queue::assertPushed(TranslateModelsJob::class, function (TranslateModelsJob $job) use ($post): bool {
+        return $job->requestedModel === Post::class
+            && $job->modelClass === Post::class
+            && $job->ids === [$post->getKey()]
+            && $job->options['source_locale'] === 'en'
+            && $job->options['target_locales'] === ['fr']
+            && $job->options['attributes'] === ['title', 'summary']
+            && $job->options['force'] === false;
+    });
+    Queue::assertPushed(TranslateModelsJob::class, function (TranslateModelsJob $job) use ($product): bool {
+        return $job->requestedModel === Product::class
+            && $job->modelClass === Product::class
+            && $job->ids === [$product->getKey()]
+            && $job->options['source_locale'] === 'en'
+            && $job->options['target_locales'] === ['fr']
+            && $job->options['attributes'] === ['name']
+            && $job->options['force'] === false;
+    });
+});
+
+it('requires a model when translate ids are provided', function (): void {
+    config()->set('translatable.routes.api.v1.authorization.token', 'secret-token');
+
+    withHeader('X-Translatable-Token', 'secret-token')
+        ->postJson('/api/translatable/v1/translate', [
+            'ids' => [1],
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['model']);
+});
+
 it('lists available translatable models and their fields', function (): void {
     config()->set('translatable.routes.api.v1.authorization.token', 'secret-token');
 
@@ -258,6 +415,45 @@ it('filters missing translations to only authorized models when no model is prov
         ->assertJsonMissing([
             'model_type' => 'post',
         ]);
+});
+
+it('filters translate-all-missing requests to only authorized models when no model is provided', function (): void {
+    Queue::fake();
+
+    app(RouteRequestAuthorizer::class)->using(
+        fn (Request $request, string $modelClass): bool => $modelClass === Product::class
+    );
+
+    Post::query()->create([
+        'slug' => 'about',
+        'title:en' => 'About us',
+        'summary:en' => 'We build multilingual websites.',
+    ]);
+
+    $product = Product::query()->create([
+        'name' => 'Desk',
+        'stock' => 4,
+    ]);
+
+    postJson('/api/translatable/v1/translate', [
+        'source_locale' => 'en',
+        'target_locales' => ['fr'],
+    ])
+        ->assertAccepted()
+        ->assertJsonPath('meta.model', 'product')
+        ->assertJsonPath('meta.model_class', Product::class)
+        ->assertJsonPath('meta.models.0', 'product')
+        ->assertJsonPath('meta.model_classes.0', Product::class)
+        ->assertJsonPath('meta.matched_models', 1)
+        ->assertJsonPath('meta.queued_jobs', 1);
+
+    Queue::assertPushed(TranslateModelsJob::class, 1);
+    Queue::assertPushed(TranslateModelsJob::class, function (TranslateModelsJob $job) use ($product): bool {
+        return $job->requestedModel === Product::class
+            && $job->modelClass === Product::class
+            && $job->ids === [$product->getKey()]
+            && $job->options['target_locales'] === ['fr'];
+    });
 });
 
 it('forbids the models endpoint when authorization blocks every model', function (): void {
