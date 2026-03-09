@@ -40,6 +40,7 @@ class TranslatableServiceProvider extends ServiceProvider
 
             $this->publishesMigrations([
                 __DIR__ . '/../database/migrations/create_translations_table.php' => database_path('migrations/' . date('Y_m_d_His_') . 'create_translations_table.php'),
+                __DIR__ . '/../database/migrations/update_translations_table_add_acceptance_columns.php' => database_path('migrations/' . date('Y_m_d_His_') . 'update_translations_table_add_acceptance_columns.php'),
             ], 'translatable-migrations');
 
             $this->publishes([

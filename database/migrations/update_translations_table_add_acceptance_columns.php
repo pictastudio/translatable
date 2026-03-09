@@ -10,11 +10,11 @@ return new class extends Migration
     {
         Schema::table('translations', function (Blueprint $table): void {
             if (!Schema::hasColumn('translations', 'generated_by')) {
-                $table->string('generated_by')->default('user')->index();
+                $table->string('generated_by')->default('user')->after('value')->index();
             }
 
             if (!Schema::hasColumn('translations', 'accepted_at')) {
-                $table->dateTime('accepted_at')->nullable()->index();
+                $table->dateTime('accepted_at')->nullable()->after('generated_by')->index();
             }
         });
     }
