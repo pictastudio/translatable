@@ -3,15 +3,12 @@
 namespace PictaStudio\Translatable\Http\Controllers\Api\V1;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\ValidationException;
 use PictaStudio\Translatable\Ai\ModelTranslator;
-use PictaStudio\Translatable\Contracts\Translatable as TranslatableContract;
 use PictaStudio\Translatable\Http\Controllers\Api\Controller;
 use PictaStudio\Translatable\Http\Requests\V1\TranslateModelsRequest;
 use PictaStudio\Translatable\Http\RouteRequestAuthorizer;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 class TranslateController extends Controller
 {
@@ -22,15 +19,8 @@ class TranslateController extends Controller
     ): JsonResponse {
         $validated = $request->validated();
         $requestedModel = $validated['model'];
-        $modelClass = $this->resolveModelClass($requestedModel);
-
-        if (!$this->isTranslatableModelClass($modelClass)) {
-            throw ValidationException::withMessages([
-                'model' => "The model [{$requestedModel}] must extend Eloquent and implement the translatable contract.",
-            ]);
-        }
-
-        $this->authorizeRequest($request, $modelClass, $authorizer);
+        $modelClass = $this->ensureTranslatableModelClass($requestedModel);
+        $this->authorizeModelRequest($request, $modelClass, $authorizer);
 
         $ids = $this->resolveIds($validated);
 
@@ -71,25 +61,6 @@ class TranslateController extends Controller
         ]);
     }
 
-    protected function isTranslatableModelClass(mixed $modelClass): bool
-    {
-        return is_string($modelClass)
-            && class_exists($modelClass)
-            && is_subclass_of($modelClass, Model::class)
-            && is_subclass_of($modelClass, TranslatableContract::class);
-    }
-
-    protected function resolveModelClass(string $model): string
-    {
-        $morphedModel = Relation::getMorphedModel($model);
-
-        if (is_string($morphedModel) && $morphedModel !== '') {
-            return $morphedModel;
-        }
-
-        return $model;
-    }
-
     /**
      * @param  array<string, mixed>  $validated
      * @return array<int, int|string>
@@ -109,18 +80,5 @@ class TranslateController extends Controller
         }
 
         return array_values(array_unique($ids, SORT_REGULAR));
-    }
-
-    /**
-     * @param  class-string<Model>  $modelClass
-     */
-    protected function authorizeRequest(
-        TranslateModelsRequest $request,
-        string $modelClass,
-        RouteRequestAuthorizer $authorizer,
-    ): void {
-        if ($authorizer->isConfigured() && !$authorizer->authorize($request, $modelClass)) {
-            throw new AccessDeniedHttpException('Unauthorized translation request.');
-        }
     }
 }

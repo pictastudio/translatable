@@ -159,6 +159,7 @@ Then call:
 ```http
 GET /api/translatable/v1/locales
 GET /api/translatable/v1/models
+GET /api/translatable/v1/missing-translations
 POST /api/translatable/v1/translate
 Content-Type: application/json
 ```
@@ -173,6 +174,24 @@ Each item includes:
 - `attributes`: translated field list
 
 Use the same authentication and authorization rules as the translate endpoint.
+
+```http
+GET /api/translatable/v1/missing-translations?model=page&source_locale=en&target_locales[]=fr&per_page=50
+```
+
+The missing translations endpoint returns paginated model rows that still have at least one actionable missing translation.
+An item is included only when:
+
+- at least one requested attribute has a non-empty source value
+- at least one requested target locale is missing a non-empty translation for that attribute
+
+Each item includes:
+
+- `model_type`: fully qualified model class name
+- `model_id`: model primary key
+- `source_values`: source-locale values that can be translated
+- `missing`: target locale to missing attribute list map
+- `missing_count`: total missing locale/attribute pairs for that row
 
 ```http
 POST /api/translatable/v1/translate
