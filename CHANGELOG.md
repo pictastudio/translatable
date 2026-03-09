@@ -2,6 +2,29 @@
 
 All notable changes to `translatable` will be documented in this file.
 
+## v0.2.0 - 2026-03-09
+
+### What's Changed
+
+This minor release introduces the new AI translation workflow, adds a versioned API surface for translation operations, and expands docs and test coverage.
+
+#### Features
+
+- **AI translation workflow** - added AI-powered translation services, queued translation jobs, accepted/generated metadata, and support for translating all missing values when no request body is provided.
+- **Versioned API endpoints** - added `/api/v1` endpoints for locales, translatable models, missing translations, and translation requests.
+- **Extensibility improvements** - dispatches a dedicated `AiTranslationsCompleted` event and resolves morph-map aliases when available.
+
+#### Docs and Tooling
+
+- Updated **README** documentation for the new translation flow and package capabilities.
+- Added and reorganized **Bruno** requests for locales, models, missing translations, and translate endpoints.
+
+#### Tests
+
+- Added feature tests for **AI translation API**, **queued translations**, **command behavior**, and **locales API** coverage.
+
+**Full Changelog**: https://github.com/pictastudio/translatable/compare/v0.1.3...v0.2.0
+
 ## v0.1.3 - 2026-03-05
 
 ### What's Changed
