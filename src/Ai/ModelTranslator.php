@@ -7,7 +7,7 @@ use Illuminate\Support\Arr;
 use InvalidArgumentException;
 use PictaStudio\Translatable\Ai\Agents\TranslateModelAgent;
 use PictaStudio\Translatable\Contracts\Translatable as TranslatableContract;
-use PictaStudio\Translatable\Locales;
+use PictaStudio\Translatable\{Locales, Translation};
 use PictaStudio\Translatable\Support\TranslatableModelRegistry;
 use RuntimeException;
 use Traversable;
@@ -142,7 +142,7 @@ class ModelTranslator
 
             foreach ($translations as $locale => $localeTranslations) {
                 foreach ($localeTranslations as $attribute => $value) {
-                    $model->setTranslationValue($locale, $attribute, $value);
+                    $model->setTranslationValue($locale, $attribute, $value, Translation::GENERATED_BY_AI);
                 }
             }
 

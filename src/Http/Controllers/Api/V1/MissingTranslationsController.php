@@ -2,13 +2,11 @@
 
 namespace PictaStudio\Translatable\Http\Controllers\Api\V1;
 
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use Illuminate\Http\{JsonResponse, Request};
 use PictaStudio\Translatable\Http\Controllers\Api\Controller;
 use PictaStudio\Translatable\Http\Requests\V1\ListMissingTranslationsRequest;
 use PictaStudio\Translatable\Http\RouteRequestAuthorizer;
-use PictaStudio\Translatable\Support\MissingTranslations;
-use PictaStudio\Translatable\Support\TranslatableModelRegistry;
+use PictaStudio\Translatable\Support\{MissingTranslations, TranslatableModelRegistry};
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 class MissingTranslationsController extends Controller
@@ -40,6 +38,7 @@ class MissingTranslationsController extends Controller
                 'model_classes' => $modelClasses,
                 'source_locale' => $results['source_locale'],
                 'target_locales' => $results['target_locales'],
+                'accepted' => $validated['accepted'] ?? null,
                 'current_page' => $paginator->currentPage(),
                 'last_page' => $paginator->lastPage(),
                 'per_page' => $paginator->perPage(),

@@ -3,8 +3,7 @@
 namespace PictaStudio\Translatable\Support;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\{Builder, Model};
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
@@ -24,6 +23,7 @@ class MissingTranslations
      * @param  array{
      *     source_locale?: string|null,
      *     target_locales?: array<int, string>|null,
+     *     accepted?: bool|null,
      *     per_page?: int|null,
      *     page?: int|null
      * }  $options
@@ -48,13 +48,14 @@ class MissingTranslations
     {
         $sourceLocale = $this->resolveSourceLocale($options['source_locale'] ?? null);
         $targetLocales = $this->resolveTargetLocales($options['target_locales'] ?? null, $sourceLocale);
+        $accepted = array_key_exists('accepted', $options) ? $this->normalizeNullableBool($options['accepted']) : null;
         $perPage = max(1, min((int) ($options['per_page'] ?? 50), 100));
         $page = max(1, (int) ($options['page'] ?? 1));
 
         $rows = collect();
 
         foreach ($modelClasses as $modelClass) {
-            $rows = $rows->concat($this->rowsForModelClass($modelClass, $sourceLocale, $targetLocales));
+            $rows = $rows->concat($this->rowsForModelClass($modelClass, $sourceLocale, $targetLocales, $accepted));
         }
 
         $rows = $rows
@@ -106,8 +107,12 @@ class MissingTranslations
      *     missing_count: int
      * }>
      */
-    protected function rowsForModelClass(string $modelClass, string $sourceLocale, array $targetLocales): Collection
-    {
+    protected function rowsForModelClass(
+        string $modelClass,
+        string $sourceLocale,
+        array $targetLocales,
+        ?bool $accepted = null,
+    ): Collection {
         /** @var Model&TranslatableContract $model */
         $model = new $modelClass;
         $attributes = $this->resolveAttributes($model);
@@ -116,7 +121,7 @@ class MissingTranslations
 
         /** @var Collection<int, Model&TranslatableContract> $models */
         $models = $modelClass::query()
-            ->where(function (Builder $query) use ($sourceLocale, $targetLocales, $attributes, $baseColumns, $localeKey): void {
+            ->where(function (Builder $query) use ($sourceLocale, $targetLocales, $attributes, $baseColumns, $localeKey, $accepted): void {
                 foreach ($targetLocales as $targetLocale) {
                     foreach ($attributes as $attribute) {
                         $query->orWhere(function (Builder $pairQuery) use (
@@ -124,24 +129,28 @@ class MissingTranslations
                             $targetLocale,
                             $attribute,
                             $baseColumns,
-                            $localeKey
+                            $localeKey,
+                            $accepted
                         ): void {
                             $pairQuery
                                 ->where(function (Builder $sourceQuery) use (
                                     $sourceLocale,
                                     $attribute,
                                     $baseColumns,
-                                    $localeKey
+                                    $localeKey,
+                                    $accepted
                                 ): void {
                                     $sourceQuery->whereHas('translations', function (Builder $translations) use (
                                         $sourceLocale,
                                         $attribute,
-                                        $localeKey
+                                        $localeKey,
+                                        $accepted
                                     ): void {
                                         $translations
                                             ->where($localeKey, $sourceLocale)
                                             ->where('attribute', $attribute);
 
+                                        $this->applyAcceptedFilter($translations, $accepted);
                                         $this->whereNotBlank($translations, 'value');
                                     });
 
@@ -154,12 +163,14 @@ class MissingTranslations
                                 ->whereDoesntHave('translations', function (Builder $translations) use (
                                     $targetLocale,
                                     $attribute,
-                                    $localeKey
+                                    $localeKey,
+                                    $accepted
                                 ): void {
                                     $translations
                                         ->where($localeKey, $targetLocale)
                                         ->where('attribute', $attribute);
 
+                                    $this->applyAcceptedFilter($translations, $accepted);
                                     $this->whereNotBlank($translations, 'value');
                                 });
                         });
@@ -170,10 +181,12 @@ class MissingTranslations
             ->get();
 
         $models->load([
-            'translations' => function ($query) use ($localeKey, $sourceLocale, $targetLocales, $attributes): void {
+            'translations' => function ($query) use ($localeKey, $sourceLocale, $targetLocales, $attributes, $accepted): void {
                 $query
                     ->whereIn($localeKey, array_values(array_unique([...$targetLocales, $sourceLocale])))
                     ->whereIn('attribute', $attributes);
+
+                $this->applyAcceptedFilter($query, $accepted);
             },
         ]);
 
@@ -331,6 +344,36 @@ class MissingTranslations
         $value = mb_trim($value);
 
         return $value === '' ? null : $value;
+    }
+
+    protected function normalizeNullableBool(mixed $value): ?bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_int($value) || is_string($value)) {
+            $normalized = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+
+            return is_bool($normalized) ? $normalized : null;
+        }
+
+        return null;
+    }
+
+    protected function applyAcceptedFilter($query, ?bool $accepted): void
+    {
+        if ($accepted === null) {
+            return;
+        }
+
+        if ($accepted) {
+            $query->whereNotNull('accepted_at');
+
+            return;
+        }
+
+        $query->whereNull('accepted_at');
     }
 
     /**

@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
 use PictaStudio\Translatable\Ai\Agents\TranslateModelAgent;
 use PictaStudio\Translatable\Ai\ModelTranslator;
 use PictaStudio\Translatable\Tests\Models\Post;
@@ -46,4 +47,14 @@ it('translates missing model fields with ai without overwriting existing transla
             && $prompt->contains('A long body that should be translated.')
             && !$prompt->contains('Titolo esistente');
     });
+
+    $frenchTitle = DB::table('translations')
+        ->where('translatable_type', Post::class)
+        ->where('translatable_id', $post->getKey())
+        ->where('locale', 'fr')
+        ->where('attribute', 'title')
+        ->first();
+
+    expect($frenchTitle?->generated_by)->toBe('ai');
+    expect($frenchTitle?->accepted_at)->toBeNull();
 });

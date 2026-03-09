@@ -191,6 +191,45 @@ it('lists missing translations across all translatable models with pagination by
         ->assertJsonPath('data.0.source_values.name', 'Desk');
 });
 
+it('filters missing translations by accepted state', function (): void {
+    config()->set('translatable.ai.routes.authorization.token', 'secret-token');
+
+    $acceptedPost = Post::query()->create([
+        'slug' => 'accepted',
+        'title:en' => 'Accepted source',
+        'summary:en' => 'Ready to translate.',
+    ]);
+
+    $aiPost = Post::query()->create([
+        'slug' => 'ai-generated',
+        'title:en' => 'Ignored base value',
+    ]);
+    $aiPost->setTranslationValue('en', 'title', 'AI source title', 'ai');
+    $aiPost->setTranslationValue('en', 'summary', 'AI source summary', 'ai');
+    $aiPost->save();
+    $aiPost->refresh();
+
+    withHeader('X-Translatable-Token', 'secret-token')
+        ->getJson('/api/translatable/v1/missing-translations?accepted=true')
+        ->assertOk()
+        ->assertJsonPath('meta.accepted', true)
+        ->assertJsonPath('meta.total', 1)
+        ->assertJsonPath('data.0.model_id', $acceptedPost->getKey())
+        ->assertJsonMissing([
+            'model_id' => $aiPost->getKey(),
+        ]);
+
+    withHeader('X-Translatable-Token', 'secret-token')
+        ->getJson('/api/translatable/v1/missing-translations?accepted=false')
+        ->assertOk()
+        ->assertJsonPath('meta.accepted', false)
+        ->assertJsonPath('meta.total', 1)
+        ->assertJsonPath('data.0.model_id', $aiPost->getKey())
+        ->assertJsonMissing([
+            'model_id' => $acceptedPost->getKey(),
+        ]);
+});
+
 it('filters missing translations to only authorized models when no model is provided', function (): void {
     app(RouteRequestAuthorizer::class)->using(
         fn (Request $request, string $modelClass): bool => $modelClass === Product::class

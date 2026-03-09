@@ -22,6 +22,8 @@ trait Translatable
 
     protected ?string $defaultLocale = null;
 
+    protected ?string $translationWriteGeneratedBy = null;
+
     public function __isset($key): bool
     {
         if (is_string($key) && $this->isTranslationAttribute($key)) {
@@ -104,7 +106,7 @@ trait Translatable
             return parent::setAttribute($key, $value);
         }
 
-        $this->setTranslationValue($locale, $attribute, $value);
+        $this->setTranslationValue($locale, $attribute, $value, Translation::GENERATED_BY_USER);
 
         return $this;
     }
@@ -320,8 +322,12 @@ trait Translatable
         return $entry?->value;
     }
 
-    public function setTranslationValue(string $locale, string $attribute, mixed $value): void
-    {
+    public function setTranslationValue(
+        string $locale,
+        string $attribute,
+        mixed $value,
+        ?string $generatedBy = Translation::GENERATED_BY_USER,
+    ): void {
         $translations = $this->relationLoaded('translations') ? $this->translations : $this->translations()->get();
 
         if (!$this->relationLoaded('translations')) {
@@ -343,6 +349,7 @@ trait Translatable
         }
 
         $entry->setAttribute('value', $value);
+        $this->applyTranslationProvenance($entry, $generatedBy);
 
         $this->syncTranslatedAttributeToBaseColumn($attribute, $locale, $value);
     }
@@ -487,6 +494,23 @@ trait Translatable
         }
 
         return $saved;
+    }
+
+    protected function applyTranslationProvenance(Model $translation, ?string $generatedBy): void
+    {
+        $generatedBy = $generatedBy === Translation::GENERATED_BY_AI
+            ? Translation::GENERATED_BY_AI
+            : Translation::GENERATED_BY_USER;
+
+        $translation->setAttribute('generated_by', $generatedBy);
+
+        if ($generatedBy === Translation::GENERATED_BY_USER) {
+            $translation->setAttribute('accepted_at', $translation->freshTimestamp());
+
+            return;
+        }
+
+        $translation->setAttribute('accepted_at', null);
     }
 
     protected function syncTranslatedAttributeToBaseColumn(string $attribute, string $locale, mixed $value): void

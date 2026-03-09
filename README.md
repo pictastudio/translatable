@@ -30,6 +30,8 @@ All translations are stored in one table (`translations`) with a polymorphic rel
 - `locale`
 - `attribute`
 - `value`
+- `generated_by` (`user` or `ai`)
+- `accepted_at`
 
 This allows translating any model using the same structure.
 
@@ -188,6 +190,8 @@ When omitted, the endpoint:
 - scans all discoverable translatable models
 - uses the current app locale as the source locale
 - checks every other configured locale as a target locale
+
+You can also pass `accepted=true` or `accepted=false` to filter translation-backed source/target entries by whether `accepted_at` is filled.
 
 An item is included only when:
 
