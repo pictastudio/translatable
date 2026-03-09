@@ -115,6 +115,8 @@ it('fills translation timestamps on create', function (): void {
     expect($translation)->not->toBeNull();
     expect($translation?->created_at)->not->toBeNull();
     expect($translation?->updated_at)->not->toBeNull();
+    expect($translation?->generated_by)->toBe('user');
+    expect($translation?->accepted_at)->not->toBeNull();
 });
 
 it('fills translation timestamps on update', function (): void {
@@ -149,4 +151,6 @@ it('fills translation timestamps on update', function (): void {
     expect($translation)->not->toBeNull();
     expect(Date::parse($translation?->created_at)->format('Y-m-d H:i:s'))->toBe('2026-02-20 10:00:00');
     expect(Date::parse($translation?->updated_at)->format('Y-m-d H:i:s'))->toBe('2026-02-20 11:00:00');
+    expect($translation?->generated_by)->toBe('user');
+    expect(Date::parse($translation?->accepted_at)->format('Y-m-d H:i:s'))->toBe('2026-02-20 11:00:00');
 });

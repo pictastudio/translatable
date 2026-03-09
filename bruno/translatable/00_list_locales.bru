@@ -1,0 +1,28 @@
+meta {
+  name: List locales
+  type: http
+  seq: 0
+}
+
+get {
+  url: {{baseUrl}}/locales
+  body: none
+  auth: inherit
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+docs {
+  summary:
+  - List the configured locales and indicate which one is the default locale.
+
+  endpoint:
+  - method: GET
+  - path: /locales
+
+  body:
+  - none
+}

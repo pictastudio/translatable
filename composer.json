@@ -29,7 +29,9 @@
         "illuminate/contracts": "^12.0",
         "illuminate/database": "^12.0",
         "illuminate/http": "^12.0",
-        "illuminate/support": "^12.0"
+        "illuminate/queue": "^12.0",
+        "illuminate/support": "^12.0",
+        "laravel/ai": "^0.2.6"
     },
     "require-dev": {
         "laravel/pint": "^1.0",

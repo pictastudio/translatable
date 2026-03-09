@@ -14,6 +14,8 @@ return new class extends Migration
             $table->string('locale')->index();
             $table->string('attribute');
             $table->text('value')->nullable();
+            $table->string('generated_by')->default('user')->index();
+            $table->dateTime('accepted_at')->nullable()->index();
             $table->dateTime('created_at');
             $table->dateTime('updated_at');
 

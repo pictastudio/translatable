@@ -63,7 +63,7 @@ class TranslationBag
             return $this;
         }
 
-        $this->translatable->setTranslationValue($this->locale, $key, $value);
+        $this->translatable->setTranslationValue($this->locale, $key, $value, Translation::GENERATED_BY_USER);
 
         return $this;
     }

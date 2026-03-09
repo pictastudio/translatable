@@ -22,6 +22,11 @@ class InstallCommand extends Command
         $this->components->info('Publishing translatable migrations...');
         $this->call('vendor:publish', ['--tag' => 'translatable-migrations']);
 
+        if (confirm('Do you want to publish bruno api files?', false)) {
+            $this->components->info('Publishing bruno api files...');
+            $this->call('vendor:publish', ['--tag' => 'translatable-bruno']);
+        }
+
         if (confirm('Do you want to run migrations now?')) {
             $this->call('migrate');
         }

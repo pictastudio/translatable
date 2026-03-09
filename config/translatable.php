@@ -1,5 +1,7 @@
 <?php
 
+use PictaStudio\Translatable\Translation;
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -55,7 +57,7 @@ return [
     | Translation Storage
     |--------------------------------------------------------------------------
     */
-    'translation_model' => \PictaStudio\Translatable\Translation::class,
+    'translation_model' => Translation::class,
     'locale_key' => 'locale',
     'translations_wrapper' => null,
     'sync_base_attributes' => true,
@@ -73,4 +75,54 @@ return [
     */
     'register_locale_middleware' => true,
     'locale_header' => 'Locale',
+
+    /*
+    |--------------------------------------------------------------------------
+    | AI Translation
+    |--------------------------------------------------------------------------
+    |
+    | These options power model translation through the Laravel AI SDK.
+    | Routes are disabled by default so applications can opt in and attach
+    | their own authentication / authorization middleware.
+    |
+    */
+    'ai' => [
+        'source_locale' => null,
+        'provider' => null,
+        'model' => null,
+        'batch_size' => 25,
+        'queue' => [
+            'connection' => env('TRANSLATABLE_AI_QUEUE_CONNECTION'),
+            'name' => env('TRANSLATABLE_AI_QUEUE_NAME', 'default'),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | API Routes
+    |--------------------------------------------------------------------------
+    */
+    'routes' => [
+        'api' => [
+            'enable' => true,
+            'v1' => [
+                'prefix' => 'api/translatable/v1',
+                'name' => 'api.translatable.v1',
+                'middleware' => ['api'],
+                'authorization' => [
+                    'header' => 'X-Translatable-Token',
+                    'token' => env('TRANSLATABLE_AI_ROUTE_TOKEN'),
+                    'ability' => null,
+                    'using' => null,
+                ],
+            ],
+        ],
+    ],
+
+    'commands' => [
+        'translate_missing' => [
+            'enabled' => env('TRANSLATABLE_TRANSLATE_MISSING_ENABLED', false),
+            'schedule' => env('TRANSLATABLE_TRANSLATE_MISSING_SCHEDULE', '0 * * * *'),
+        ],
+    ],
 ];

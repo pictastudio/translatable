@@ -1,0 +1,29 @@
+meta {
+  name: List translatable models
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/models
+  body: none
+  auth: inherit
+}
+
+headers {
+  Accept: application/json
+  Content-Type: application/json
+  X-Translatable-Token: {{routeToken}}
+}
+
+docs {
+  summary:
+  - List the translatable models discoverable by the package and their translated attributes.
+
+  endpoint:
+  - method: GET
+  - path: /models
+
+  body:
+  - none
+}
