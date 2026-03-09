@@ -1,9 +1,15 @@
 <?php
 
-namespace PictaStudio\Translatable\Contracts;
+namespace PictaStudio\Translatable\Events;
 
-interface TranslationRequestNotifier
+use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Queue\SerializesModels;
+
+class AiTranslationsCompleted
 {
+    use Dispatchable;
+    use SerializesModels;
+
     /**
      * @param  array{
      *     model: string,
@@ -29,5 +35,8 @@ interface TranslationRequestNotifier
      *     }>
      * }  $summary
      */
-    public function notify(object $notifiable, array $summary): void;
+    public function __construct(
+        public array $summary,
+        public mixed $notifiable = null,
+    ) {}
 }

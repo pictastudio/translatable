@@ -46,8 +46,7 @@ it('queues selected models for translation through the api endpoint', function (
         ->assertAccepted()
         ->assertJsonPath('meta.matched_models', 2)
         ->assertJsonPath('meta.queued', true)
-        ->assertJsonPath('meta.queue', 'default')
-        ->assertJsonPath('meta.notification_enabled', true);
+        ->assertJsonPath('meta.queue', 'default');
 
     Queue::assertPushedOn('default', TranslateModelsJob::class);
     Queue::assertPushed(TranslateModelsJob::class, function (TranslateModelsJob $job) use ($firstPost, $secondPost): bool {

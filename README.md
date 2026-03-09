@@ -138,6 +138,18 @@ Useful options:
 - `--force` overwrites existing translations
 - `--provider=` and `--ai-model=` override the Laravel AI SDK defaults
 
+Translate all currently missing translations across all translatable models:
+
+```bash
+php artisan translatable:translate-missing \
+    --source-locale=en \
+    --target-locales=it \
+    --target-locales=fr
+```
+
+The dedicated command scans all registered translatable models, finds still-missing translations, and generates only the missing pairs.
+By default it uses accepted source translations only.
+
 ### API Endpoint
 
 An opt-in API endpoint is available for admin dashboards.
@@ -231,9 +243,9 @@ Example payload:
 The `model` field accepts either the fully qualified class name or a registered morph alias such as `page`.
 
 The response is asynchronous and returns `202 Accepted` after the translation job is queued.
-The queued job performs the AI translation work and can notify the authenticated requester when it completes.
+The queued job performs the AI translation work and dispatches an event when it completes.
 
-Queue and notification behavior are configured in `config/translatable.php`:
+Queue behavior is configured in `config/translatable.php`:
 
 ```php
 'ai' => [
@@ -241,10 +253,12 @@ Queue and notification behavior are configured in `config/translatable.php`:
         'connection' => null,
         'name' => 'default',
     ],
-    'notifications' => [
-        'enabled' => true,
-        'channels' => ['mail', 'database'],
-        'notifier' => \PictaStudio\Translatable\Notifications\LaravelTranslationRequestNotifier::class,
+],
+
+'commands' => [
+    'translate_missing' => [
+        'enabled' => false,
+        'schedule' => '0 * * * *',
     ],
 ],
 ```
@@ -252,10 +266,22 @@ Queue and notification behavior are configured in `config/translatable.php`:
 Notes:
 
 - set `ai.queue.name` to choose which queue handles translation jobs; it defaults to `default`
-- set `ai.notifications.enabled` to `false` to skip completion notifications entirely
-- change `ai.notifications.channels` to control which built-in Laravel notification channels run
-- replace `ai.notifications.notifier` with your own implementation of `PictaStudio\Translatable\Contracts\TranslationRequestNotifier` to swap the notification behavior
-- the default `database` channel expects the host application to have Laravel's `notifications` table available
+- set `commands.translate_missing.enabled` to `true` to auto-register the scheduled command
+- set `commands.translate_missing.schedule` to the cron expression you want Laravel's scheduler to use
+
+Listen for `PictaStudio\Translatable\Events\AiTranslationsCompleted` in your application if you want to react after the job finishes:
+
+```php
+use Illuminate\Support\Facades\Event;
+use PictaStudio\Translatable\Events\AiTranslationsCompleted;
+
+Event::listen(AiTranslationsCompleted::class, function (AiTranslationsCompleted $event): void {
+    $summary = $event->summary;
+    $user = $event->notifiable;
+
+    // Send a notification, trigger a webhook, write logs, etc.
+});
+```
 
 ### API Authorization
 

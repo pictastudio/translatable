@@ -56,15 +56,6 @@ class TestCase extends Orchestra
             $table->unsignedInteger('stock')->default(0);
             $table->timestamps();
         });
-
-        Schema::create('notifications', function (Blueprint $table): void {
-            $table->uuid('id')->primary();
-            $table->string('type');
-            $table->morphs('notifiable');
-            $table->text('data');
-            $table->timestamp('read_at')->nullable();
-            $table->timestamps();
-        });
     }
 
     protected function registerTestRoutes(): void

@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Console\Scheduling\Schedule;
 use PictaStudio\Translatable\Ai\Agents\TranslateModelAgent;
 use PictaStudio\Translatable\Tests\Models\{Post, Product};
 
@@ -102,4 +103,55 @@ it('prompts for the model and defaults the source locale to the current app loca
             && $prompt->contains('Chi siamo')
             && $prompt->contains('Realizziamo siti web multilingua.');
     });
+});
+
+it('translates missing translations across all translatable models from the dedicated command', function (): void {
+    $post = Post::query()->create([
+        'slug' => 'pricing',
+        'title:en' => 'Pricing',
+        'summary:en' => 'Choose the right plan for your team.',
+    ]);
+
+    $product = Product::query()->create([
+        'name:en' => 'Chair',
+        'stock' => 4,
+    ]);
+
+    TranslateModelAgent::fake([
+        [
+            'translations' => [
+                ['model_id' => (string) $post->getKey(), 'locale' => 'it', 'attribute' => 'title', 'value' => 'Prezzi'],
+                ['model_id' => (string) $post->getKey(), 'locale' => 'it', 'attribute' => 'summary', 'value' => 'Scegli il piano giusto per il tuo team.'],
+            ],
+        ],
+        [
+            'translations' => [
+                ['model_id' => (string) $product->getKey(), 'locale' => 'it', 'attribute' => 'name', 'value' => 'Sedia'],
+            ],
+        ],
+    ])->preventStrayPrompts();
+
+    artisan('translatable:translate-missing', [
+        '--source-locale' => 'en',
+        '--target-locales' => ['it'],
+    ])->assertSuccessful();
+
+    $post->refresh();
+    $product->refresh();
+
+    expect($post->{'title:it'})->toBe('Prezzi');
+    expect($post->{'summary:it'})->toBe('Scegli il piano giusto per il tuo team.');
+    expect($product->{'name:it'})->toBe('Sedia');
+});
+
+it('registers the dedicated missing translation command schedule from config', function (): void {
+    config()->set('translatable.commands.translate_missing.enabled', true);
+    config()->set('translatable.commands.translate_missing.schedule', '15 2 * * *');
+
+    $schedule = app(Schedule::class);
+
+    expect(collect($schedule->events())->contains(function ($event): bool {
+        return str_contains($event->command, 'translatable:translate-missing')
+            && $event->expression === '15 2 * * *';
+    }))->toBeTrue();
 });

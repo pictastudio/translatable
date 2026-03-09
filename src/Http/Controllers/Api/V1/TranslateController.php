@@ -69,7 +69,6 @@ class TranslateController extends Controller
                 'matched_models' => $models->count(),
                 'queued' => true,
                 'queue' => config('translatable.ai.queue.name', 'default'),
-                'notification_enabled' => (bool) config('translatable.ai.notifications.enabled', true),
             ],
         ], 202);
     }

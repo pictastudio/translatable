@@ -2,15 +2,13 @@
 
 namespace PictaStudio\Translatable;
 
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
-use InvalidArgumentException;
-use PictaStudio\Translatable\Console\Commands\{InstallCommand, TranslateModelsCommand};
-use PictaStudio\Translatable\Contracts\TranslationRequestNotifier;
+use PictaStudio\Translatable\Console\Commands\{InstallCommand, TranslateMissingCommand, TranslateModelsCommand};
 use PictaStudio\Translatable\Http\RouteRequestAuthorizer;
 use PictaStudio\Translatable\Middleware\SetLocaleFromHeader;
-use PictaStudio\Translatable\Notifications\LaravelTranslationRequestNotifier;
 
 class TranslatableServiceProvider extends ServiceProvider
 {
@@ -20,29 +18,17 @@ class TranslatableServiceProvider extends ServiceProvider
 
         $this->app->singleton(Locales::class);
         $this->app->singleton(RouteRequestAuthorizer::class);
-        $this->app->bind(TranslationRequestNotifier::class, function ($app): TranslationRequestNotifier {
-            $notifier = $app->make(config(
-                'translatable.ai.notifications.notifier',
-                LaravelTranslationRequestNotifier::class
-            ));
-
-            if (!$notifier instanceof TranslationRequestNotifier) {
-                throw new InvalidArgumentException(sprintf(
-                    'The configured translation notifier must implement [%s].',
-                    TranslationRequestNotifier::class
-                ));
-            }
-
-            return $notifier;
-        });
         $this->app->alias(Locales::class, 'translatable.locales');
         $this->app->alias(Locales::class, 'translatable');
         $this->app->alias(RouteRequestAuthorizer::class, 'translatable.ai.authorizer');
 
         $this->commands([
             InstallCommand::class,
+            TranslateMissingCommand::class,
             TranslateModelsCommand::class,
         ]);
+
+        $this->registerCommandScheduling();
     }
 
     public function boot(): void
@@ -201,5 +187,22 @@ class TranslatableServiceProvider extends ServiceProvider
         }
 
         return $name;
+    }
+
+    protected function registerCommandScheduling(): void
+    {
+        $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
+            if (!(bool) config('translatable.commands.translate_missing.enabled', false)) {
+                return;
+            }
+
+            $expression = config('translatable.commands.translate_missing.schedule', '0 * * * *');
+
+            if (!is_string($expression) || $expression === '') {
+                return;
+            }
+
+            $schedule->command('translatable:translate-missing')->cron($expression);
+        });
     }
 }

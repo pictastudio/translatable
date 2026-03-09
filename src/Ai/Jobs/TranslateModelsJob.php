@@ -3,13 +3,13 @@
 namespace PictaStudio\Translatable\Ai\Jobs;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\{InteractsWithQueue, SerializesModels};
 use PictaStudio\Translatable\Ai\ModelTranslator;
-use PictaStudio\Translatable\Contracts\{Translatable as TranslatableContract, TranslationRequestNotifier};
+use PictaStudio\Translatable\Contracts\Translatable as TranslatableContract;
+use PictaStudio\Translatable\Events\AiTranslationsCompleted;
 use Throwable;
 
 class TranslateModelsJob implements ShouldQueue
@@ -68,64 +68,23 @@ class TranslateModelsJob implements ShouldQueue
         }
 
         $firstResult = $results[0] ?? null;
-
-        if (!$this->notificationsEnabled()) {
-            return;
-        }
-
-        if (!is_object($this->notifiable)) {
-            return;
-        }
+        $summary = [
+            'model' => $this->requestedModel,
+            'model_class' => $this->modelClass,
+            'requested_ids' => $this->ids,
+            'matched_models' => count($results),
+            'translated_pairs' => array_sum(array_column($results, 'translated_count')),
+            'source_locale' => is_array($firstResult) ? $firstResult['source_locale'] : ($this->options['source_locale'] ?? null),
+            'target_locales' => is_array($firstResult) ? $firstResult['target_locales'] : ($this->options['target_locales'] ?? []),
+            'attributes' => is_array($firstResult) ? $firstResult['translated_attributes'] : ($this->options['attributes'] ?? []),
+            'force' => (bool) ($this->options['force'] ?? false),
+            'results' => $results,
+        ];
 
         try {
-            $notifier = $this->resolveNotifier(app());
-
-            if (!$notifier instanceof TranslationRequestNotifier) {
-                return;
-            }
-
-            $notifier->notify($this->notifiable, [
-                'model' => $this->requestedModel,
-                'model_class' => $this->modelClass,
-                'requested_ids' => $this->ids,
-                'matched_models' => count($results),
-                'translated_pairs' => array_sum(array_column($results, 'translated_count')),
-                'source_locale' => is_array($firstResult) ? $firstResult['source_locale'] : ($this->options['source_locale'] ?? null),
-                'target_locales' => is_array($firstResult) ? $firstResult['target_locales'] : ($this->options['target_locales'] ?? []),
-                'attributes' => is_array($firstResult) ? $firstResult['translated_attributes'] : ($this->options['attributes'] ?? []),
-                'force' => (bool) ($this->options['force'] ?? false),
-                'results' => $results,
-            ]);
+            event(new AiTranslationsCompleted($summary, is_object($this->notifiable) ? $this->notifiable : null));
         } catch (Throwable) {
             return;
         }
-    }
-
-    protected function notificationsEnabled(): bool
-    {
-        try {
-            return (bool) config('translatable.ai.notifications.enabled', true);
-        } catch (Throwable) {
-            return false;
-        }
-    }
-
-    protected function resolveNotifier(Container $container): ?TranslationRequestNotifier
-    {
-        if ($container->bound(TranslationRequestNotifier::class)) {
-            $notifier = $container->make(TranslationRequestNotifier::class);
-
-            return $notifier instanceof TranslationRequestNotifier ? $notifier : null;
-        }
-
-        $notifierClass = config('translatable.ai.notifications.notifier');
-
-        if (!is_string($notifierClass) || $notifierClass === '') {
-            return null;
-        }
-
-        $notifier = $container->make($notifierClass);
-
-        return $notifier instanceof TranslationRequestNotifier ? $notifier : null;
     }
 }

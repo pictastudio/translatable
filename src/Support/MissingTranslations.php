@@ -46,24 +46,10 @@ class MissingTranslations
      */
     public function paginate(array $modelClasses, array $options = []): array
     {
-        $sourceLocale = $this->resolveSourceLocale($options['source_locale'] ?? null);
-        $targetLocales = $this->resolveTargetLocales($options['target_locales'] ?? null, $sourceLocale);
-        $accepted = array_key_exists('accepted', $options) ? $this->normalizeNullableBool($options['accepted']) : null;
+        $results = $this->collect($modelClasses, $options);
         $perPage = max(1, min((int) ($options['per_page'] ?? 50), 100));
         $page = max(1, (int) ($options['page'] ?? 1));
-
-        $rows = collect();
-
-        foreach ($modelClasses as $modelClass) {
-            $rows = $rows->concat($this->rowsForModelClass($modelClass, $sourceLocale, $targetLocales, $accepted));
-        }
-
-        $rows = $rows
-            ->sortBy([
-                ['model_type', 'asc'],
-                ['model_id', 'asc'],
-            ])
-            ->values();
+        $rows = collect($results['data']);
 
         $paginator = new Paginator(
             items: $rows->forPage($page, $perPage)->values(),
@@ -78,10 +64,61 @@ class MissingTranslations
         );
 
         return [
-            'source_locale' => $sourceLocale,
-            'target_locales' => $targetLocales,
+            'source_locale' => $results['source_locale'],
+            'target_locales' => $results['target_locales'],
             'paginator' => $paginator,
             'data' => $paginator->items(),
+        ];
+    }
+
+    /**
+     * @param  array<int, class-string<Model&TranslatableContract>>  $modelClasses
+     * @param  array{
+     *     source_locale?: string|null,
+     *     target_locales?: array<int, string>|null,
+     *     accepted?: bool|null,
+     *     per_page?: int|null,
+     *     page?: int|null
+     * }  $options
+     * @return array{
+     *     source_locale: string,
+     *     target_locales: array<int, string>,
+     *     data: array<int, array{
+     *         model_type: string,
+     *         model_class: class-string<Model>,
+     *         model_id: mixed,
+     *         source_locale: string,
+     *         target_locales: array<int, string>,
+     *         translated_attributes: array<int, string>,
+     *         source_values: array<string, string>,
+     *         missing: array<string, array<int, string>>,
+     *         missing_count: int
+     *     }>
+     * }
+     */
+    public function collect(array $modelClasses, array $options = []): array
+    {
+        $sourceLocale = $this->resolveSourceLocale($options['source_locale'] ?? null);
+        $targetLocales = $this->resolveTargetLocales($options['target_locales'] ?? null, $sourceLocale);
+        $accepted = array_key_exists('accepted', $options) ? $this->normalizeNullableBool($options['accepted']) : null;
+
+        $rows = collect();
+
+        foreach ($modelClasses as $modelClass) {
+            $rows = $rows->concat($this->rowsForModelClass($modelClass, $sourceLocale, $targetLocales, $accepted));
+        }
+
+        $rows = $rows
+            ->sortBy([
+                ['model_type', 'asc'],
+                ['model_id', 'asc'],
+            ])
+            ->values();
+
+        return [
+            'source_locale' => $sourceLocale,
+            'target_locales' => $targetLocales,
+            'data' => $rows->all(),
         ];
     }
 
