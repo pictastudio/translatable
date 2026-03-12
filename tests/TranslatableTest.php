@@ -86,6 +86,37 @@ it('supports locale keyed mass assignment and fallback', function (): void {
     expect($post->title)->toBe('Roadmap');
 });
 
+it('updates only the translation record for localized updates on existing models', function (): void {
+    $product = Product::query()->create([
+        'stock' => 20,
+        'name:en' => 'Shoes',
+        'name:it' => 'Scarpe',
+    ]);
+
+    app()->setLocale('it');
+
+    $product->update([
+        'name' => 'Stivali',
+    ]);
+    $product->refresh();
+
+    expect($product->{'name:it'})->toBe('Stivali')
+        ->and($product->getRawOriginal('name'))->toBe('Shoes');
+
+    assertDatabaseHas('translations', [
+        'translatable_type' => Product::class,
+        'translatable_id' => $product->id,
+        'locale' => 'it',
+        'attribute' => 'name',
+        'value' => 'Stivali',
+    ]);
+
+    assertDatabaseHas('products', [
+        'id' => $product->id,
+        'name' => 'Shoes',
+    ]);
+});
+
 it('provides translate or new helpers', function (): void {
     $post = Post::query()->create([
         'slug' => 'faq',

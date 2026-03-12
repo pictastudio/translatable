@@ -170,7 +170,7 @@ When enabled, attribute reads follow this order:
 
 This means existing schemas such as `products.name` can keep working even before every translation is populated.
 
-With `sync_base_attributes=true`, writing a translated value also mirrors it into the matching base column when that column exists. This is useful when legacy columns are non-nullable.
+With `sync_base_attributes=true`, writing a translated value mirrors it into the matching base column when that column exists and the model is being created, or the base column is still empty. This is useful when legacy columns are non-nullable.
 
 ## Serialization And Deletion
 

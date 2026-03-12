@@ -2,6 +2,24 @@
 
 All notable changes to `translatable` will be documented in this file.
 
+## v0.2.1 - 2026-03-12
+
+### What's Changed
+
+#### Fixes
+
+- **Localized updates preserve base columns** - updating a translated attribute on an existing model now only updates the translation record, leaving the underlying table column unchanged unless it still needs to be seeded.
+
+#### Docs and Tooling
+
+- Clarified the `sync_base_attributes` behavior in the README so it matches the localized update flow.
+
+#### Tests
+
+- Added regression coverage to confirm localized updates do not overwrite existing base column values.
+
+**Full Changelog**: https://github.com/pictastudio/translatable/compare/v0.2.0...v0.2.1
+
 ## v0.2.0 - 2026-03-09
 
 ### What's Changed

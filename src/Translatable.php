@@ -537,17 +537,17 @@ trait Translatable
 
     protected function shouldOverrideBaseColumnValue(string $attribute, string $locale): bool
     {
-        if ($locale === $this->locale()) {
-            return true;
-        }
-
         if (!array_key_exists($attribute, $this->attributes)) {
             return true;
         }
 
         $currentValue = $this->attributes[$attribute];
 
-        return $currentValue === null || $currentValue === '';
+        if ($currentValue === null || $currentValue === '') {
+            return true;
+        }
+
+        return !$this->exists && $locale === $this->locale();
     }
 
     protected function hasModelColumnForAttribute(string $attribute): bool
