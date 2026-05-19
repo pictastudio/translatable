@@ -2,6 +2,24 @@
 
 All notable changes to `translatable` will be documented in this file.
 
+## v0.2.2 - 2026-05-19
+
+### What's Changed
+
+This release adds Laravel 13 compatibility while carrying forward the recent Laravel AI dependency updates and release-publisher metadata.
+
+### Tooling
+
+- Added Laravel 13 support to the Illuminate component constraints and updated the package test stack for Orchestra Testbench 11 and Pest Laravel 4.1.
+- Updated the Laravel AI requirement through the recent dependency bumps up to `^0.6.3`.
+- Added release-publisher metadata for future release automation.
+
+### Tests
+
+- Verified the package test suite against Laravel 13 with `composer test`.
+
+**Full Changelog**: https://github.com/pictastudio/translatable/compare/v0.2.1...v0.2.2
+
 ## v0.2.1 - 2026-03-12
 
 ### What's Changed
